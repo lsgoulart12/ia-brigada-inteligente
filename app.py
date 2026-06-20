@@ -4,8 +4,11 @@ import google.generativeai as genai
 from PIL import Image
 
 # 1. Configura a chave de API
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-
+# 1. Configura a chave de API (Busca no Streamlit Cloud ou no ambiente local)
+if "GEMINI_API_KEY" in tf.secrets:
+    genai.configure(api_key=tf.secrets["GEMINI_API_KEY"])
+else:
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 # 2. Configura o modelo
 model = genai.GenerativeModel("gemini-1.5-flash")
 
