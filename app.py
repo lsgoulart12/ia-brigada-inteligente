@@ -1,7 +1,6 @@
 import os
 import streamlit as tf
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from PIL import Image  # Biblioteca para processar a foto que o usuário enviar
 
 # 1. Configura a chave de API diretamente no ambiente
