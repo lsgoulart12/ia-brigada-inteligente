@@ -5,7 +5,7 @@ import google.generativeai as genai
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 # Usando o modelo mais estável disponível
-model = genai.GenerativeModel("gemini-1.0-pro")
+model = genai.GenerativeModel("gemini-pro")
 
 st.title("🔥 IA Brigada Inteligente")
 user_input = st.text_input("Digite sua dúvida:")
