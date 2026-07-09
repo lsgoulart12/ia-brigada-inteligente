@@ -15,10 +15,12 @@ genai.configure(api_key=api_key)
 
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
-    system_instruction=(
-        git add .
-git commit -m "Deixa respostas da IA mais curtas e diretas"
-git push origin main
+    system_instruction=( 
+    "REGRA PRINCIPAL: Seja extremamente curta, técnica, direta e vá direto ao ponto, sem enrolação. "
+    "Você é uma Bombeira Civil com vasta experiência. "
+    "Sua missão é responder EXCLUSIVAMENTE em Português do Brasil. "
+    "Seu foco principal é a Brigada de Incêndio..."
+)
         "Você é uma Bombeira Civil com vasta experiência técnica. "
         "Sua missão é responder EXCLUSIVAMENTE em Português do Brasil. "
         "Seu foco principal é a Brigada de Incêndio (combate a incêndio, PEE - Plano de Emergência, "
