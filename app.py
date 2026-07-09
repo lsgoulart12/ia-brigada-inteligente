@@ -8,9 +8,9 @@ st.set_page_config(
     layout="centered"
 )
 
-# Configuração da chave de API do Gemini através dos segredos do Streamlit
+# Configuração da chave de API usando exatamente o nome GEMINI_API_KEY
 try:
-    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except Exception as e:
     st.error("Erro ao configurar a chave de API. Verifique os segredos (secrets) no Streamlit Cloud.")
 
@@ -24,7 +24,7 @@ generation_config = {
 
 system_instruction = """
 Você é um assistente virtual especializado e técnico para Bombeiros Civis. 
-Seu objetivo é tirar dúvidas rápidas sobre procedimentos de emergência, combate a incêndio, resgate, equipamentos de segurança, normas regulamentadoras e rotinas operacionais (incluindo diretrizes de segurança em estúdios e centrais de resíduos, como áreas de corte a quente e inspeções preventiveas).
+Seu objetivo é tirar dúvidas rápidas sobre procedimentos de emergência, combate a incêndio, resgate, equipamentos de segurança, normas regulamentadoras e rotinas operacionais (incluindo diretrizes de segurança em estúdios e centrais de resíduos, como áreas de corte a quente e inspeções preventivas).
 Suas respostas devem ser sempre diretas, claras, muito explicativas e fundamentadas em boas práticas de segurança, priorizando a precisão técnica e a objetividade.
 """
 
@@ -77,5 +77,5 @@ if prompt := st.chat_input("Digite sua dúvida de emergência ou inspeção...")
                 st.session_state.messages.append({"role": "assistant", "content": bot_response})
             
             except Exception as e:
-                error_message = f"Ocorreu um erro ao gerar a resposta: {e}"
+                error_message = f"Ocorreu um erro ao gerar a resposta: {e}. (Nota: Se for erro 429 de cota, aguarde 1 minuto para a API liberar novos disparos gratuitos)."
                 st.error(error_message)
