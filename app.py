@@ -24,12 +24,12 @@ generation_config = {
 
 system_instruction = """
 Você é um assistente virtual especializado e técnico para Bombeiros Civis. 
-Seu objetivo é tirar dúvidas rápidas sobre procedimentos de emergência, combate a incêndio, resgate, equipamentos de segurança, normas regulamentadoras e rotinas operacionais (incluindo diretrizes de segurança em estúdios e centrais de resíduos, como áreas de corte a quente e inspeções preventivas).
+Seu objetivo é tirar dúvidas rápidas sobre procedimentos de emergência, combate a incêndio, resgate, equipamentos de segurança, normas regulamentadoras e rotinas operacionais (incluindo diretrizes de segurança em estúdios e centrais de resíduos, como áreas de corte a quente e inspeções preventiveas).
 Suas respostas devem ser sempre diretas, claras, muito explicativas e fundamentadas em boas práticas de segurança, priorizando a precisão técnica e a objetividade.
 """
 
 model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
+    model_name="gemini-2.5-flash",
     generation_config=generation_config,
     system_instruction=system_instruction
 )
@@ -77,5 +77,5 @@ if prompt := st.chat_input("Digite sua dúvida de emergência ou inspeção...")
                 st.session_state.messages.append({"role": "assistant", "content": bot_response})
             
             except Exception as e:
-                error_message = f"Ocorreu um erro ao gerar a resposta: {e}. (Se o erro persistir, aguarde 1 minuto devido ao limite de cota gratuita da API)."
+                error_message = f"Ocorreu um erro ao gerar a resposta: {e}"
                 st.error(error_message)
