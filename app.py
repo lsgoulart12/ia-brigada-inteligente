@@ -30,8 +30,6 @@ model = genai.GenerativeModel(
         "Seja extremamente técnica, precisa e evite termos genéricos ou em outros idiomas. "
         "Se um termo técnico tiver tradução para o português do Brasil, utilize-a sempre (ex: use 'bico' em vez de 'boquilla')."
     )
-)
-
 # Campo de entrada de texto
 prompt = st.chat_input("Digite sua dúvida e aperte Enter:")
 
