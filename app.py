@@ -1,6 +1,4 @@
 import streamlit as st
-import os
-from google.generativeai import GenerativeModel
 import google.generativeai as genai
 
 # Configuração da página do Streamlit
@@ -10,55 +8,74 @@ st.set_page_config(
     layout="centered"
 )
 
-# Título do Aplicativo
-st.title("🧯 IA Brigada")
-st.markdown("Assistente virtual especializado para Bombeiros Civis. Tire suas dúvidas rápidas sobre procedimentos de emergência, equipamentos e normas.")
+# Configuração da chave de API do Gemini através dos segredos do Streamlit
+try:
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+except Exception as e:
+    st.error("Erro ao configurar a chave de API. Verifique os segredos (secrets) no Streamlit Cloud.")
 
-# Configuração da API do Gemini
-api_key = os.environ.get("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", None)
+# Configuração do modelo com instruções de sistema especializadas
+generation_config = {
+    "temperature": 0.3,
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_output_tokens": 1024,
+}
 
-if not api_key:
-    st.error("Chave API não configurada corretamente. Adicione a GEMINI_API_KEY nos secrets do Streamlit.")
-    st.stop()
+system_instruction = """
+Você é um assistente virtual especializado e técnico para Bombeiros Civis. 
+Seu objetivo é tirar dúvidas rápidas sobre procedimentos de emergência, combate a incêndio, resgate, equipamentos de segurança, normas regulamentadoras e rotinas operacionais (incluindo diretrizes de segurança em estúdios e centrais de resíduos, como áreas de corte a quente e inspeções preventivas).
+Suas respostas devem ser sempre diretas, claras, muito explicativas e fundamentadas em boas práticas de segurança, priorizando a precisão técnica e a objetividade.
+"""
 
-genai.configure(api_key=api_key)
-
-# Configuração do Modelo com instrução de sistema otimizada para respostas curtas e diretas
-model = GenerativeModel(
-    model_name="gemini-2.5-flash",
-    system_instruction="REGRA PRINCIPAL: Seja extremamente curta, técnica, direta e vá direto ao ponto, sem enrolação. Você é uma Bombeira Civil com vasta experiência. Sua missão é responder EXCLUSIVAMENTE em Português do Brasil. Seu foco principal é a Brigada de Incêndio (combate a princípios de incêndio, Plano de Emergência, inspeção de equipamentos como extintores e hidrantes, e primeiros socorros)."
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config=generation_config,
+    system_instruction=system_instruction
 )
 
-# Inicializa o histórico de chat na sessão se não existir
+# Título e descrição da interface
+st.markdown("## 🧯 IA Brigada")
+st.markdown("Assistente virtual especializado para Bombeiros Civis. Tire suas dúvidas rápidas sobre procedimentos de emergência, equipamentos e normas.")
+
+# Inicializa o histórico de conversas no session_state do Streamlit
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibe as mensagens anteriores do chat
+# Exibe o histórico de mensagens anteriores na tela
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Entrada do usuário (chat input)
+# Entrada de texto do usuário (barra de chat)
 if prompt := st.chat_input("Digite sua dúvida de emergência ou inspeção..."):
-    # Adiciona a mensagem do usuário ao histórico
+    # Adiciona a mensagem do usuário ao histórico visual e à sessão
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Gera a resposta utilizando o Gemini
+    # Prepara o histórico no formato correto exigido pela API do Gemini (usando 'model' em vez de 'assistant')
+    gemini_history = []
+    for msg in st.session_state.messages:
+        role = "model" if msg["role"] == "assistant" else "user"
+        gemini_history.append({
+            "role": role,
+            "parts": [msg["content"]]
+        })
+
+    # Gera a resposta utilizando a API do Gemini
     with st.chat_message("assistant"):
-        with st.spinner("Consultando protocolos..."):
+        with st.spinner("Analisando procedimento..."):
             try:
-                # Inicia o chat mantendo o histórico da sessão
-                chat = model.start_chat(history=[
-                    {"role": m["role"], "parts": [m["content"]]} 
-                    for m in st.session_state.messages[:-1]
-                ])
+                chat = model.start_chat(history=gemini_history[:-1])
                 response = chat.send_message(prompt)
-                response_text = response.text
-                st.markdown(response_text)
+                bot_response = response.text
                 
-                # Adiciona a resposta ao histórico
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
+                st.markdown(bot_response)
+                
+                # Salva a resposta no histórico da sessão
+                st.session_state.messages.append({"role": "assistant", "content": bot_response})
+            
             except Exception as e:
-                st.error(f"Ocorreu um erro ao gerar a resposta: {e}")
+                error_message = f"Ocorreu um erro ao gerar a resposta: {e}. (Se o erro persistir, aguarde 1 minuto devido ao limite de cota gratuita da API)."
+                st.error(error_message)
