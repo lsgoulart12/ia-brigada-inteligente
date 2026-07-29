@@ -1,3 +1,4 @@
+import base64
 import os
 import streamlit as st
 import google.generativeai as genai
@@ -13,18 +14,16 @@ st.set_page_config(
 )
 
 # ==========================================
-# CONFIGURAÇÃO GEMINI (Com duplo mecanismo de segurança)
+# CONFIGURAÇÃO GEMINI
 # ==========================================
 api_key = None
 try:
-    # Tenta carregar do Streamlit Secrets (Nuvem)
     api_key = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    # Se não encontrar, tenta pegar das variáveis de ambiente do sistema ou arquivo local
     api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
-    st.error("Erro: A chave GEMINI_API_KEY não foi encontrada nos secrets do Streamlit nem nas variáveis de ambiente.")
+    st.error("Erro: A chave GEMINI_API_KEY não foi encontrada nos secrets.")
     st.stop()
 
 genai.configure(api_key=api_key)
@@ -67,52 +66,28 @@ model = genai.GenerativeModel(
 )
 
 # ==========================================
-# CABEÇALHO (Com verificação segura da logo)
+# CABEÇALHO LIMPO COM A NOVA LOGO
 # ==========================================
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    if os.path.exists("logo_brigada.png"):
-        st.image("logo_brigada.png", width=280)
-    else:
+    logo_file = "logo_brigada.png"
+    if os.path.exists(logo_file):
+        # Renderiza a imagem perfeitamente convertida para evitar erros na nuvem
+        with open(logo_file, "rb") as f:
+            encoded_img = base64.b64encode(f.read()).decode()
         st.markdown(
-            """
-            <div style="background:#b91c1c; color:white; text-align:center; padding:10px; border-radius:8px; font-weight:bold;">
-                IA BRIGADA
-            </div>
-            """,
+            f'<div style="text-align: center;"><img src="data:image/png;base64,{encoded_img}" style="width: 100%; max-width: 240px; border-radius: 8px;"></div>',
             unsafe_allow_html=True
         )
+    else:
+        st.warning("Arquivo 'logo_brigada.png' não encontrado na pasta.")
 
 st.markdown(
     """
-    <h1 style='text-align:center; margin-bottom:0px;'>
-        IA BRIGADA
-    </h1>
-
-    <p style='text-align:center;
-              color:#6b7280;
-              font-size:18px;
-              margin-top:0px;'>
-        Assistente Virtual para Bombeiros Civis
+    <p style='text-align:center; color:#6b7280; font-size:16px; margin-top:5px; margin-bottom:10px;'>
+        Assistente Virtual para Bombeiros Civis • Operações e Inspeção
     </p>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <div style="
-        background:#0f172a;
-        color:white;
-        text-align:center;
-        padding:12px;
-        border-radius:10px;
-        font-weight:bold;
-        margin-bottom:15px;
-    ">
-        🚒 Operações • Inspeções • Emergências • Suporte Técnico
-    </div>
     """,
     unsafe_allow_html=True
 )
@@ -120,7 +95,7 @@ st.markdown(
 st.divider()
 
 # ==========================================
-# SIDEBAR
+# SIDEBAR (CENTRAL DE INSPEÇÃO)
 # ==========================================
 with st.sidebar:
     st.markdown("### Central de Inspeção")
@@ -140,7 +115,7 @@ with st.sidebar:
         )
 
 # ==========================================
-# HISTÓRICO DE CONVERSA
+# HISTÓRICO E CHAT
 # ==========================================
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -151,9 +126,6 @@ for message in st.session_state.messages:
         if message.get("image") is not None:
             st.image(message["image"], width=250)
 
-# ==========================================
-# ENTRADA DO USUÁRIO
-# ==========================================
 prompt = st.chat_input("Digite sua dúvida operacional ou solicitação de inspeção...")
 
 if prompt:
