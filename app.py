@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
@@ -40,18 +41,21 @@ model = genai.GenerativeModel(
     system_instruction=system_instruction
 )
 
-# --- CABEÇALHO PRINCIPAL (LOGO ISOLADA E SUBTÍTULO LIMPO) ---
+# --- CABEÇALHO PRINCIPAL (RENDERIZAÇÃO BLINDADA DA LOGO) ---
 col_logo, col_texto = st.columns([1, 4])
 
 with col_logo:
     try:
-        logo = Image.open("logo_brigada.png")
-        st.image(logo, use_container_width=True)
-    except Exception:
-        st.write("IA Brigada")
+        logo_path = os.path.join(os.path.dirname(__file__), "logo_brigada.png")
+        # Abre e converte para RGB para garantir compatibilidade total na nuvem
+        logo_img = Image.open(logo_path).convert("RGB")
+        st.image(logo_img, use_container_width=True)
+    except Exception as img_err:
+        # Exibe o erro visualmente caso haja qualquer problema de leitura do arquivo
+        st.error(f"Erro ao carregar logo: {img_err}")
 
 with col_texto:
-    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
     st.caption("Assistente Virtual • Operações e Inspeção")
 
 st.markdown("---")
@@ -80,10 +84,8 @@ for message in st.session_state.messages:
 # Entrada de Mensagem e Processamento (Texto e Imagem)
 if prompt := st.chat_input("Digite sua dúvida operacional ou comando de inspeção..."):
     
-    # Captura a imagem atual da barra lateral se houver arquivo enviado
     current_img = Image.open(uploaded_file) if uploaded_file else None
     
-    # Adiciona a entrada ao histórico
     st.session_state.messages.append({
         "role": "user", 
         "content": prompt, 
@@ -95,7 +97,6 @@ if prompt := st.chat_input("Digite sua dúvida operacional ou comando de inspeç
         if current_img:
             st.image(current_img, width=250)
 
-    # Processamento da resposta pela inteligência artificial
     with st.chat_message("assistant"):
         with st.spinner("Processando análise técnica..."):
             try:
