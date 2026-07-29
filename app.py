@@ -1,12 +1,13 @@
-import os
+import base64
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
+import io
 
 # Configuração da página do Streamlit
 st.set_page_config(
     page_title="IA Brigada",
-    page_icon="logo_brigada.png", 
+    page_icon="🧯", 
     layout="centered"
 )
 
@@ -41,21 +42,27 @@ model = genai.GenerativeModel(
     system_instruction=system_instruction
 )
 
-# --- CABEÇALHO PRINCIPAL (RENDERIZAÇÃO BLINDADA DA LOGO) ---
+# --- CABEÇALHO PRINCIPAL (EXIBIÇÃO ROBUSTA DA MARCA) ---
 col_logo, col_texto = st.columns([1, 4])
 
 with col_logo:
     try:
-        logo_path = os.path.join(os.path.dirname(__file__), "logo_brigada.png")
-        # Abre e converte para RGB para garantir compatibilidade total na nuvem
-        logo_img = Image.open(logo_path).convert("RGB")
+        # Tenta carregar a imagem local se ela existir na pasta
+        logo_img = Image.open("logo_brigada.png").convert("RGB")
         st.image(logo_img, use_container_width=True)
-    except Exception as img_err:
-        # Exibe o erro visualmente caso haja qualquer problema de leitura do arquivo
-        st.error(f"Erro ao carregar logo: {img_err}")
+    except Exception:
+        # Fallback elegante em HTML/CSS caso o arquivo físico falhe na nuvem
+        st.markdown(
+            """
+            <div style="background-color:#b91c1c; padding:12px; border-radius:8px; text-align:center; color:white; font-weight:bold; font-size:18px;">
+                IA BRIGADA
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 with col_texto:
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     st.caption("Assistente Virtual • Operações e Inspeção")
 
 st.markdown("---")
