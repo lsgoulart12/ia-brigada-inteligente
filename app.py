@@ -1,6 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
+import base64
+from io import BytesIO
 
 # Configuração da página do Streamlit
 st.set_page_config(
@@ -40,18 +42,33 @@ model = genai.GenerativeModel(
     system_instruction=system_instruction
 )
 
-# --- CABEÇALHO PRINCIPAL (EXIBIÇÃO DIRETA DA LOGO VIA STREAMLIT) ---
+# --- CABEÇALHO PRINCIPAL (EXIBIÇÃO SEGURA VIA HTML BASE64) ---
 col_logo, col_texto = st.columns([1, 4])
 
 with col_logo:
     try:
-        # Carregamento direto padrão do Streamlit
-        st.image("logo_brigada.png", use_container_width=True)
+        # Lê o arquivo da logo local e converte para string Base64 embutida
+        with open("logo_brigada.png", "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
+        
+        # Renderiza via HTML purificado para garantir exibição perfeita no Streamlit Cloud
+        st.markdown(
+            f'<img src="data:image/png;base64,{encoded_string}" style="width: 100%; max-width: 120px; border-radius: 6px;">',
+            unsafe_allow_html=True
+        )
     except Exception:
-        st.markdown("### IA Brigada")
+        # Fallback de texto estilizado caso o arquivo físico não seja encontrado na máquina local
+        st.markdown(
+            """
+            <div style="background-color:#b91c1c; padding:10px; border-radius:6px; text-align:center; color:white; font-weight:bold; font-size:14px;">
+                IA BRIGADA
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 with col_texto:
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
     st.caption("Assistente Virtual • Operações e Inspeção")
 
 st.markdown("---")
