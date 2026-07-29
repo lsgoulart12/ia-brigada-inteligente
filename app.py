@@ -1,23 +1,34 @@
+import os
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
-import base64
-from io import BytesIO
 
-# Configuração da página do Streamlit
+# ==========================================
+# CONFIGURAÇÃO DA PÁGINA
+# ==========================================
 st.set_page_config(
     page_title="IA Brigada",
-    page_icon="🧯", 
+    page_icon="logo_brigada.png",
     layout="centered"
 )
 
-# Configuração da chave de API
+# ==========================================
+# CONFIGURAÇÃO GEMINI (Com duplo mecanismo de segurança)
+# ==========================================
+api_key = None
 try:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-except Exception as e:
-    st.error("Erro ao configurar a chave de API nos segredos do Streamlit.")
+    # Tenta carregar do Streamlit Secrets (Nuvem)
+    api_key = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    # Se não encontrar, tenta pegar das variáveis de ambiente do sistema ou arquivo local
+    api_key = os.getenv("GEMINI_API_KEY")
 
-# Configuração do modelo especializado para Bombeiros Civis
+if not api_key:
+    st.error("Erro: A chave GEMINI_API_KEY não foi encontrada nos secrets do Streamlit nem nas variáveis de ambiente.")
+    st.stop()
+
+genai.configure(api_key=api_key)
+
 generation_config = {
     "temperature": 0.4,
     "top_p": 0.95,
@@ -26,110 +37,172 @@ generation_config = {
 }
 
 system_instruction = """
-Você é a IA Brigada, assistente virtual especializada, técnica e suporte operacional para Bombeiros Civis.
-Seu tom de voz deve ser profissional, direto e objetivo.
-Forneça a resposta técnica imediata na primeira frase e complemente com os detalhes operacionais em seguida.
+Você é a IA Brigada, assistente virtual especializada em Bombeiros Civis.
+
+Seu tom deve ser:
+- Técnico
+- Objetivo
+- Profissional
+- Direto
+
+Sempre forneça a resposta técnica primeiro.
 
 BASE DE CONHECIMENTO OBRIGATÓRIA:
-- Termo "Passaro de fogo": Refere-se a balões (crime ambiental, Art. 42 da Lei 9.605/98, com pena de 1 a 3 anos de detenção e multa).
-- Análise de Imagem: Avalie imagens de campo (estruturas, longarinas, equipamentos, painéis) identificando inconformidades, corrosão ou falhas.
+
+- Termo "Pássaro de Fogo":
+Refere-se a balões.
+Crime ambiental previsto no Art. 42 da Lei 9.605/98.
+Pena:
+- Detenção de 1 a 3 anos
+- Multa
+
+- Análise de imagens:
+Avalie estruturas, longarinas, equipamentos, painéis, corrosão, falhas visíveis, riscos operacionais e inconformidades.
 """
 
-# Instanciação central do modelo Gemini 2.5 Flash (Multimodal)
 model = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
     generation_config=generation_config,
     system_instruction=system_instruction
 )
 
-# --- CABEÇALHO PRINCIPAL (EXIBIÇÃO SEGURA VIA HTML BASE64) ---
-col_logo, col_texto = st.columns([1, 4])
+# ==========================================
+# CABEÇALHO (Com verificação segura da logo)
+# ==========================================
+col1, col2, col3 = st.columns([1, 2, 1])
 
-with col_logo:
-    try:
-        # Lê o arquivo da logo local e converte para string Base64 embutida
-        with open("logo_brigada.png", "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode()
-        
-        # Renderiza via HTML purificado para garantir exibição perfeita no Streamlit Cloud
-        st.markdown(
-            f'<img src="data:image/png;base64,{encoded_string}" style="width: 100%; max-width: 120px; border-radius: 6px;">',
-            unsafe_allow_html=True
-        )
-    except Exception:
-        # Fallback de texto estilizado caso o arquivo físico não seja encontrado na máquina local
+with col2:
+    if os.path.exists("logo_brigada.png"):
+        st.image("logo_brigada.png", width=280)
+    else:
         st.markdown(
             """
-            <div style="background-color:#b91c1c; padding:10px; border-radius:6px; text-align:center; color:white; font-weight:bold; font-size:14px;">
+            <div style="background:#b91c1c; color:white; text-align:center; padding:10px; border-radius:8px; font-weight:bold;">
                 IA BRIGADA
             </div>
             """,
             unsafe_allow_html=True
         )
 
-with col_texto:
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-    st.caption("Assistente Virtual • Operações e Inspeção")
+st.markdown(
+    """
+    <h1 style='text-align:center; margin-bottom:0px;'>
+        IA BRIGADA
+    </h1>
 
-st.markdown("---")
+    <p style='text-align:center;
+              color:#6b7280;
+              font-size:18px;
+              margin-top:0px;'>
+        Assistente Virtual para Bombeiros Civis
+    </p>
+    """,
+    unsafe_allow_html=True
+)
 
-# --- BARRA LATERAL (CENTRAL DE INSPEÇÃO E UPLOAD) ---
+st.markdown(
+    """
+    <div style="
+        background:#0f172a;
+        color:white;
+        text-align:center;
+        padding:12px;
+        border-radius:10px;
+        font-weight:bold;
+        margin-bottom:15px;
+    ">
+        🚒 Operações • Inspeções • Emergências • Suporte Técnico
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.divider()
+
+# ==========================================
+# SIDEBAR
+# ==========================================
 with st.sidebar:
     st.markdown("### Central de Inspeção")
-    st.write("Envie imagens de estruturas ou equipamentos para análise técnica.")
-    uploaded_file = st.file_uploader("Selecionar arquivo de imagem", type=["jpg", "jpeg", "png"])
+    st.write("Envie imagens de estruturas, equipamentos ou instalações para análise técnica.")
     
-    if uploaded_file:
-        img_for_display = Image.open(uploaded_file)
-        st.image(img_for_display, caption="Imagem carregada para análise", use_container_width=True)
+    uploaded_file = st.file_uploader(
+        "Selecionar imagem",
+        type=["jpg", "jpeg", "png"]
+    )
 
-# Inicialização do histórico de mensagens no estado da sessão
+    if uploaded_file:
+        preview_image = Image.open(uploaded_file)
+        st.image(
+            preview_image,
+            caption="Imagem carregada",
+            use_container_width=True
+        )
+
+# ==========================================
+# HISTÓRICO DE CONVERSA
+# ==========================================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Exibição do histórico na interface
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        if "image" in message and message["image"]:
+        if message.get("image") is not None:
             st.image(message["image"], width=250)
 
-# Entrada de Mensagem e Processamento (Texto e Imagem)
-if prompt := st.chat_input("Digite sua dúvida operacional ou comando de inspeção..."):
-    
-    current_img = Image.open(uploaded_file) if uploaded_file else None
-    
-    st.session_state.messages.append({
-        "role": "user", 
-        "content": prompt, 
-        "image": current_img
-    })
-    
+# ==========================================
+# ENTRADA DO USUÁRIO
+# ==========================================
+prompt = st.chat_input("Digite sua dúvida operacional ou solicitação de inspeção...")
+
+if prompt:
+    current_image = None
+    if uploaded_file:
+        current_image = Image.open(uploaded_file)
+
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": prompt,
+            "image": current_image
+        }
+    )
+
     with st.chat_message("user"):
         st.markdown(prompt)
-        if current_img:
-            st.image(current_img, width=250)
+        if current_image:
+            st.image(current_image, width=250)
 
     with st.chat_message("assistant"):
         with st.spinner("Processando análise técnica..."):
             try:
-                if current_img:
-                    response = model.generate_content([prompt, current_img])
+                if current_image:
+                    response = model.generate_content([prompt, current_image])
                 else:
-                    chat = model.start_chat(history=[
-                        {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]} 
-                        for m in st.session_state.messages[:-1]
-                    ])
+                    history = []
+                    for msg in st.session_state.messages[:-1]:
+                        role = "user" if msg["role"] == "user" else "model"
+                        history.append(
+                            {
+                                "role": role,
+                                "parts": [msg["content"]]
+                            }
+                        )
+
+                    chat = model.start_chat(history=history)
                     response = chat.send_message(prompt)
-                
-                full_res = response.text
-                st.markdown(full_res)
-                
-                st.session_state.messages.append({
-                    "role": "assistant", 
-                    "content": full_res, 
-                    "image": None
-                })
-            
+
+                answer = response.text
+                st.markdown(answer)
+
+                st.session_state.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                        "image": None
+                    }
+                )
+
             except Exception as e:
-                st.error(f"Ocorreu um erro técnico ao processar a solicitação: {e}")
+                st.error(f"Erro ao processar a solicitação: {e}")
