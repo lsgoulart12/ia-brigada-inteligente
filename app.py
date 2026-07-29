@@ -51,7 +51,6 @@ with col_logo:
         st.write("IA Brigada")
 
 with col_texto:
-    # Espaçamento vertical estético para alinhar com a logo
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     st.caption("Assistente Virtual • Operações e Inspeção")
 
@@ -119,4 +118,4 @@ if prompt := st.chat_input("Digite sua dúvida operacional ou comando de inspeç
                 })
             
             except Exception as e:
-                st.error(f"Ocorreu um erro técnico ao processar a solicitação: {e}")v
+                st.error(f"Ocorreu um erro técnico ao processar a solicitação: {e}")
