@@ -1,8 +1,6 @@
-import base64
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
-import io
 
 # Configuração da página do Streamlit
 st.set_page_config(
@@ -42,24 +40,15 @@ model = genai.GenerativeModel(
     system_instruction=system_instruction
 )
 
-# --- CABEÇALHO PRINCIPAL (EXIBIÇÃO ROBUSTA DA MARCA) ---
+# --- CABEÇALHO PRINCIPAL (EXIBIÇÃO DIRETA DA LOGO VIA STREAMLIT) ---
 col_logo, col_texto = st.columns([1, 4])
 
 with col_logo:
     try:
-        # Tenta carregar a imagem local se ela existir na pasta
-        logo_img = Image.open("logo_brigada.png").convert("RGB")
-        st.image(logo_img, use_container_width=True)
+        # Carregamento direto padrão do Streamlit
+        st.image("logo_brigada.png", use_container_width=True)
     except Exception:
-        # Fallback elegante em HTML/CSS caso o arquivo físico falhe na nuvem
-        st.markdown(
-            """
-            <div style="background-color:#b91c1c; padding:12px; border-radius:8px; text-align:center; color:white; font-weight:bold; font-size:18px;">
-                IA BRIGADA
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.markdown("### IA Brigada")
 
 with col_texto:
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
