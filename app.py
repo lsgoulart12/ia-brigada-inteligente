@@ -40,7 +40,7 @@ model = genai.GenerativeModel(
     system_instruction=system_instruction
 )
 
-# --- CABEÇALHO PRINCIPAL COM A LOGO OFICIAL ---
+# --- CABEÇALHO PRINCIPAL (LOGO ISOLADA E SUBTÍTULO LIMPO) ---
 col_logo, col_texto = st.columns([1, 4])
 
 with col_logo:
@@ -51,7 +51,8 @@ with col_logo:
         st.write("IA Brigada")
 
 with col_texto:
-    st.markdown("## IA Brigada")
+    # Espaçamento vertical estético para alinhar com a logo
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     st.caption("Assistente Virtual • Operações e Inspeção")
 
 st.markdown("---")
@@ -118,4 +119,4 @@ if prompt := st.chat_input("Digite sua dúvida operacional ou comando de inspeç
                 })
             
             except Exception as e:
-                st.error(f"Ocorreu um erro técnico ao processar a solicitação: {e}")
+                st.error(f"Ocorreu um erro técnico ao processar a solicitação: {e}")v
