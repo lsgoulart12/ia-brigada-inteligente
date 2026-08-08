@@ -1,101 +1,61 @@
-import datetime
-import pandas as pd
 import streamlit as st
 import streamlit_authenticator as stauth
-from supabase import Client, create_client
+from supabase import create_client, Client
+import pandas as pd
+import datetime
+import google.generativeai as genai
 
-# ==========================================
-# CONFIGURAÇÕES E CONEXÃO COM O BANCO DE DADOS
-# ==========================================
+# --- CONFIGURAÇÃO GEMINI ---
+GEMINI_API_KEY = "AQ.Ab8RN6J5UQCm@m7PMa7WAKa51piCX8FGsbDExyuX8oYdKzf79A"
+genai.configure(api_key=GEMINI_API_KEY)
 
-# ==========================================
-# CONFIGURAÇÕES E CONEXÃO COM O BANCO DE DADOS
-# ==========================================
+# --- CONFIGURAÇÃO SUPABASE ---
+SUPABASE_URL = "https://seu-projeto-aqui.supabase.co"
+SUPABASE_KEY = "sb_publishable_lI8HcYnr6pnQXdRUHrn1vQ_hldR_fIx"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-try:
-  SUPABASE_URL = st.secrets["SUPABASE_URL"]
-  SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-  supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-except KeyError as e:
-  st.error(f"Erro crítico: A chave de segurança {e} não foi encontrada no Streamlit Secrets.")
-  st.stop()
-except Exception as e:
-  st.error(f"Erro crítico ao inicializar o cliente Supabase: {e}")
-  st.stop()
+# --- LOGO ---
+st.image("logo.png", use_container_width=True)
 
-# ==========================================
-# CONFIGURAÇÃO DE AUTENTICAÇÃO
-# ==========================================
+st.title("IA BRIGADA")
+st.subheader("Assistente Virtual para Bombeiros Civis")
 
-names = ["Bombeiro Civil", "Supervisor"]
-usernames = ["bombeiro", "supervisor"]
-passwords = ["senha123", "senha123"]
+# --- LOGIN ---
+names = ["Bombeiro1", "Bombeiro2"]
+usernames = ["b1", "b2"]
+passwords = ["senha1", "senha2"]
 
 authenticator = stauth.Authenticate(
-    names,
-    usernames,
-    passwords,
-    cookie_name="brigada_cookie",
-    key="chave_assinatura_secreta",
-    cookie_expiry_days=30,
+    names, usernames, passwords,
+    "brigada_cookie", "chave_assinatura", cookie_expiry_days=30
 )
 
 name, authentication_status, username = authenticator.login("Login", "main")
 
-# ==========================================
-# INTERFACE PRINCIPAL
-# ==========================================
-
-st.title("IA BRIGADA")
-st.subheader("Assistente Virtual para Bombeiros Civis - Estúdios Globo")
-
 if authentication_status:
-  st.success(f"Bem-vindo(a), {name}!")
+    st.success(f"Bem-vindo, {name}!")
 
-  # ------------------------------------------
-  # MÓDULO: CADASTRO DE OCORRÊNCIAS COM BLINDAGEM
-  # ------------------------------------------
-  st.markdown("### Novo Registro de Ocorrência")
-
-  titulo = st.text_input("Título da Ocorrência")
-  descricao = st.text_area("Descrição Detalhada")
-  local = st.text_input("Local (ex: CC3, Estúdios)")
-
-  if st.button("Salvar Registro"):
-    if titulo.strip() and descricao.strip() and local.strip():
-      try:
-        # Bloco seguro contra falhas de conexão no banco
-        supabase.table("registros_brigada").insert({
-            "titulo": titulo.strip(),
-            "descricao": descricao.strip(),
-            "local": local.strip(),
+    # --- REGISTRO DE PERGUNTAS ---
+    pergunta = st.text_input("Digite sua pergunta:")
+    if st.button("Enviar"):
+        supabase.table("interacoes").insert({
+            "usuario": username,
+            "pergunta": pergunta,
+            "timestamp": datetime.datetime.now().isoformat()
         }).execute()
-        st.success("Registro salvo com segurança no banco de dados.")
-      except Exception as ex:
-        st.error(f"Erro ao comunicar com o banco de dados: {ex}")
-    else:
-      st.warning("Preencha todos os campos obrigatórios corretamente.")
+        st.info("Pergunta registrada com sucesso!")
 
-  # ------------------------------------------
-  # MÓDULO: DASHBOARD E CONSULTA DE DADOS
-  # ------------------------------------------
-  st.markdown("---")
-  st.markdown("### Registros Recentes da Brigada")
-
-  try:
-    resposta = supabase.table("registros_brigada").select("*").execute()
-    df = pd.DataFrame(resposta.data)
+    # --- DASHBOARD ---
+    st.subheader("📊 Análise de Interações")
+    dados = supabase.table("interacoes").select("*").execute()
+    df = pd.DataFrame(dados.data)
 
     if not df.empty:
-      st.dataframe(df)
-    else:
-      st.info("Nenhum registro encontrado no banco de dados.")
-  except Exception as ex:
-    st.warning("Não foi possível carregar os registros no momento.")
-
-  authenticator.logout("Sair", "main")
+        st.write("Total de acessos:", df["usuario"].nunique())
+        st.write("Perguntas mais frequentes:")
+        st.bar_chart(df["pergunta"].value_counts())
 
 elif authentication_status is False:
-  st.error("Usuário ou senha incorretos.")
+    st.error("Usuário ou senha incorretos.")
 elif authentication_status is None:
-  st.warning("Insira suas credenciais de acesso.")
+    st.warning("Por favor, insira suas credenciais.")
