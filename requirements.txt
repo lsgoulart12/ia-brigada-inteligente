@@ -1,6 +1,4 @@
 streamlit
-google-generativeai
-streamlit
-streamlit-authenticator
 supabase
 pandas
+google-generativeai
