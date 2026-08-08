@@ -8,12 +8,19 @@ from supabase import Client, create_client
 # CONFIGURAÇÕES E CONEXÃO COM O BANCO DE DADOS
 # ==========================================
 
+# ==========================================
+# CONFIGURAÇÕES E CONEXÃO COM O BANCO DE DADOS
+# ==========================================
+
 try:
   SUPABASE_URL = st.secrets["SUPABASE_URL"]
   SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
   supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+except KeyError as e:
+  st.error(f"Erro crítico: A chave de segurança {e} não foi encontrada no Streamlit Secrets.")
+  st.stop()
 except Exception as e:
-  st.error("Erro crítico de configuração de credenciais.")
+  st.error(f"Erro crítico ao inicializar o cliente Supabase: {e}")
   st.stop()
 
 # ==========================================
