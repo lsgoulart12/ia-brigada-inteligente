@@ -14,12 +14,9 @@ SUPABASE_URL = "https://seu-projeto-aqui.supabase.co"
 SUPABASE_KEY = "sb_publishable_lI8HcYnr6pnQXdRUHrn1vQ_hldR_fIx"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- LOGO ---
-# Certifique-se que o arquivo logo.png está na mesma pasta do app.py
-st.image("logo.png", use_container_width=True)
-
-st.title("IA BRIGADA")
-st.subheader("Assistente Virtual para Bombeiros Civis")
+# --- INTERFACE ---
+st.title("▲ IA BRIGADA")
+st.subheader("Assistente Virtual")
 
 # --- LOGIN ---
 names = ["Bombeiro1", "Bombeiro2"]
