@@ -16,12 +16,9 @@ except Exception:
 # --- INTERFACE COM FONTES AJUSTADAS ---
 st.image("logo_brigada.png.png", width=120)
 
-# IA BRIGADA com o tamanho igual ao subheader antigo
 st.markdown(
     "<h3 style='margin-bottom: 0px;'>IA BRIGADA</h3>", unsafe_allow_html=True
 )
-
-# Assistente Virtual com o tamanho menor, ajustado
 st.markdown(
     "<p style='font-size: 1.1rem; color: #c0c0c0; font-weight: 600;"
     " margin-top: 0px;'>Assistente Virtual</p>",
@@ -57,13 +54,15 @@ else:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
+          # Instrução rigorosa para respostas diretas, humanas e sem enrolação
           contexto_brigada = (
-              "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
-              "Se a pergunta for sobre balões ou soltar balões, utilize obrigatoriamente o jargão "
-              "'Pássaro de Fogo' e cite a Lei de Crimes Ambientais (Lei nº 9.605/98, Art. 42), "
-              "com pena de detenção de 1 a 3 anos ou multa, além de orientar sobre a fiança policial. "
-              "Se a pergunta for sobre outros temas técnicos (como EPI, resgate, etc.), seja direto e responda "
-              "estritamente ao assunto solicitado, sem misturar informações desnecessárias."
+              "Você é um colega de equipe experiente e prestativo para bombeiros civis. "
+              "REGRAS DE OURO:\n"
+              "1. Nunca comece com frases robóticas como 'Como assistente técnico...' ou 'Esclareço que...'. Vá direto ao ponto.\n"
+              "2. Seja extremamente objetivo, humano e natural. Use poucas palavras.\n"
+              "3. Se o assunto for balões, chame de 'Pássaro de Fogo', diga que é crime pela Lei 9.605/98 (Art. 42) "
+              "com pena de 1 a 3 anos, e seja breve.\n"
+              "4. Se for sobre outros assuntos (como EPI), defina o item de forma curta e direta, sem misturar leis de balões."
           )
 
           model = genai.GenerativeModel("gemini-2.5-flash")
