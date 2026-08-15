@@ -1,5 +1,5 @@
-from datetime import datetime
 from PIL import Image
+import datetime
 import google.generativeai as genai
 import streamlit as st
 
@@ -16,16 +16,16 @@ except Exception:
 # --- INTERFACE LIMPA (Sem o triângulo) ---
 st.image("logo_brigada.png.png", width=120)
 st.title("IA BRIGADA")
-st.subheader("Assistente Virtual")
+st.subheader("Assistente virtual")
 
 if "autenticado" not in st.session_state:
   st.session_state["autenticado"] = False
 
 if not st.session_state["autenticado"]:
-  usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
+  usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)","b3 (Bombeiro3)"])
   senha = st.text_input("Senha:", type="password")
   if st.button("Entrar"):
-    if senha in ["senha1", "senha2"]:
+    if senha in ["senha1", "senha2","senha3"]:
       st.session_state["autenticado"] = True
       st.session_state["usuario"] = usuario.split(" ")[0]
       st.rerun()
@@ -35,42 +35,41 @@ else:
   username = st.session_state["usuario"]
   st.success(f"Bem-vindo, {username}!")
 
-  # Formulário limpo com upload discreto
+  # Formulário limpo com upload discreto (estilo clipe/arquivo leve)
   with st.form("chat_form", clear_on_submit=True):
     col1, col2 = st.columns([0.15, 0.85])
     with col1:
+      # Ícone/botão discreto para anexo
       uploaded_file = st.file_uploader(
           "📎", type=["jpg", "png", "jpeg"], label_visibility="collapsed"
       )
     with col2:
-      st.write("Anexar foto da ocorrência (opcional)")
-
-    pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
-    enviar = st.form_submit_button("Enviar Pergunta")
+      pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
+st.write("Anexar foto da ocorrência (opcional)")
+enviar = st.form_submit_button("Enviar Pergunta")
 
   if enviar:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
-          # Contexto focado em objetividade e precisão técnica
-          instrucao_sistema = (
+          # Contexto fixo da brigada (Jargão e Lei preservados)
+          contexto_brigada = (
               "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
-              "REGRAS DE RESPOSTA:\n"
-              "1. Seja direto, conciso e estritamente objetivo.\n"
-              "2. Responda APENAS o que foi perguntado, sem adicionar informações ou leis não solicitadas.\n"
-              "3. Se a pergunta for sobre balões ou soltar balões, utilize estritamente o jargão 'Pássaro de Fogo' "
-              "e cite a Lei de Crimes Ambientais (Lei nº 9.605/98, Art. 42), com pena de 1 a 3 anos ou multa. "
-              "Se a pergunta for sobre outro tema (como EPI, resgate, etc.), foque exclusivamente no assunto perguntado."
+              "Jargão operacional obrigatório: 'Pássaro de Fogo' refere-se a balões. "
+              "Base legal obrigatória: Lei de Crimes Ambientais (Lei nº 9.605/98, Art. 42), "
+              "com pena de detenção de 1 a 3 anos ou multa, ou ambas. "
+              "Tratativa de fiança: Explicite que pode ser arbitrada pela autoridade policial em casos "
+              "de menor potencial, mas elevada ou mantida em prisão preventiva em casos de incêndio severo ou risco."
           )
 
           model = genai.GenerativeModel("gemini-1.5-flash")
 
           if uploaded_file is not None:
             imagem = Image.open(uploaded_file)
-            response = model.generate_content([instrucao_sistema, imagem, pergunta])
+            response = model.generate_content([contexto_brigada, imagem, pergunta])
           else:
             response = model.generate_content(
-                f"{instrucao_sistema} | Pergunta: {pergunta}"
+                f"{contexto_brigada} | Pergunta: {pergunta}"
             )
 
           st.write("**Resposta Técnica:**")
@@ -78,8 +77,9 @@ else:
 
         except Exception as e:
           st.error(
-              f"Erro na comunicação com a API: {e}. Verifique sua chave nos"
-              " Secrets."
+              "Erro 401: A chave atual não é compatível com o Gemini. Por"
+              " favor, gere uma chave nova no Google AI Studio que comece com"
+              " 'AIzaSy'."
           )
     else:
       st.warning("Por favor, digite uma pergunta antes de enviar.")
