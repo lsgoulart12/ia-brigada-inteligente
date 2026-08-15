@@ -1,21 +1,22 @@
 from datetime import datetime
 from PIL import Image
-from google import genai
+import google.generativeai as genai
 import streamlit as st
 
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
 
+# Configuração da chave API (compatível com as novas chaves)
 try:
   API_KEY = st.secrets["GEMINI_API_KEY"].strip()
-  client = genai.Client(api_key=API_KEY)
+  genai.configure(api_key=API_KEY)
 except Exception:
   pass
 
 # --- INTERFACE LIMPA ---
 st.image("logo_brigada.png.png", width=120)
 st.title("IA BRIGADA")
-st.subheader("Assistente Técnico Especializado - Brigada de Incêndio")
+st.subheader("Assistente Virtual")
 
 if "autenticado" not in st.session_state:
   st.session_state["autenticado"] = False
@@ -34,10 +35,16 @@ else:
   username = st.session_state["usuario"]
   st.success(f"Bem-vindo, {username}!")
 
+  # Formulário limpo com upload discreto
   with st.form("chat_form", clear_on_submit=True):
-    uploaded_file = st.file_uploader(
-        "Anexar foto da ocorrência (opcional)", type=["jpg", "png", "jpeg"]
-    )
+    col1, col2 = st.columns([0.15, 0.85])
+    with col1:
+      uploaded_file = st.file_uploader(
+          "📎", type=["jpg", "png", "jpeg"], label_visibility="collapsed"
+      )
+    with col2:
+      st.write("Anexar foto da ocorrência (opcional)")
+
     pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
     enviar = st.form_submit_button("Enviar Pergunta")
 
@@ -45,25 +52,25 @@ else:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
-          contexto_brigada = (
-              "Você é um assistente técnico sênior para bombeiros civis e"
-              " brigadistas. Jargão operacional obrigatório: 'Pássaro de Fogo'"
-              " refere-se a balões. Base legal obrigatória: Lei de Crimes"
-              " Ambientais (Lei nº 9.605/98, Art. 42), com pena de detenção de"
-              " 1 a 3 anos ou multa, ou ambas. Tratativa de fiança: Explicite"
-              " que pode ser arbitrada pela autoridade policial em casos de"
-              " menor potencial, mas elevada ou mantida em prisão preventiva em"
-              " casos de incêndio severo ou risco."
+          # Instrução para ser estritamente objetivo e focado na pergunta
+          instrucao_sistema = (
+              "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
+              "REGRAS DE RESPOSTA:\n"
+              "1. Seja direto, conciso e estritamente objetivo.\n"
+              "2. Responda APENAS o que foi perguntado, sem adicionar informações não solicitadas.\n"
+              "3. Se a pergunta for sobre balões ou jargão, utilize o termo 'Pássaro de Fogo' e cite a Lei 9.605/98 Art. 42. "
+              "Se a pergunta for sobre outro assunto (como EPI), foque exclusivamente nele sem misturar leis de balões."
           )
 
-          contents = [contexto_brigada]
+          model = genai.GenerativeModel("gemini-1.5-flash")
+
           if uploaded_file is not None:
-            contents.append(Image.open(uploaded_file))
-          contents.append(pergunta)
-
-          response = client.models.generate_content(
-              model="gemini-2.5-flash", contents=contents
-          )
+            imagem = Image.open(uploaded_file)
+            response = model.generate_content([instrucao_sistema, imagem, pergunta])
+          else:
+            response = model.generate_content(
+                f"{instrucao_sistema} | Pergunta: {pergunta}"
+            )
 
           st.write("**Resposta Técnica:**")
           st.write(response.text)
