@@ -44,9 +44,10 @@ else:
           "📎", type=["jpg", "png", "jpeg"], label_visibility="collapsed"
       )
     with col2:
-      pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
-st.write("Anexar foto da ocorrência (opcional)")
-enviar = st.form_submit_button("Enviar Pergunta")
+      st.write("Anexar foto da ocorrência (opcional)")
+
+    pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
+    enviar = st.form_submit_button("Enviar Pergunta")
 
   if enviar:
     if pergunta.strip():
