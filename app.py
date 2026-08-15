@@ -1,3 +1,4 @@
+from PIL import Image
 import datetime
 import google.generativeai as genai
 import streamlit as st
@@ -5,7 +6,7 @@ import streamlit as st
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
 
-# Conexão segura
+# Inicialização segura da chave (compatível com o novo padrão AQ.)
 try:
   API_KEY = st.secrets["GEMINI_API_KEY"].strip()
   genai.configure(api_key=API_KEY)
@@ -15,7 +16,7 @@ except Exception:
 # --- INTERFACE LIMPA ---
 st.image("logo_brigada.png.png", width=120)
 st.title("IA BRIGADA")
-st.subheader("Assistente Virtual")
+st.subheader("Assistente Técnico Especializado - Brigada de Incêndio")
 
 if "autenticado" not in st.session_state:
   st.session_state["autenticado"] = False
@@ -46,7 +47,7 @@ else:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
-          # Contexto técnico fixo da brigada
+          # Contexto técnico fixo da brigada (preservando o jargão e a lei)
           contexto_brigada = (
               "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
               "Jargão operacional obrigatório: 'Pássaro de Fogo' refere-se a balões. "
@@ -58,10 +59,7 @@ else:
 
           model = genai.GenerativeModel("gemini-1.5-flash")
 
-          # Se houver foto anexada, podemos enviar junto com o texto para a IA analisar
           if uploaded_file is not None:
-            from PIL import Image
-
             imagem = Image.open(uploaded_file)
             response = model.generate_content([contexto_brigada, imagem, pergunta])
           else:
@@ -73,10 +71,7 @@ else:
           st.write(response.text)
 
         except Exception as e:
-          st.error(
-              "Erro na comunicação com a API do Gemini. Verifique se sua chave"
-              " no painel Secrets começa com 'AIzaSy'."
-          )
+          st.error(f"Erro na comunicação com a API: {e}")
     else:
       st.warning("Por favor, digite uma pergunta antes de enviar.")
 
