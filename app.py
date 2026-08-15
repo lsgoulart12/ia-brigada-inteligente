@@ -13,10 +13,20 @@ try:
 except Exception:
   pass
 
-# --- INTERFACE LIMPA (Sem o triângulo) ---
+# --- INTERFACE COM FONTES AJUSTADAS ---
 st.image("logo_brigada.png.png", width=120)
-st.title("IA BRIGADA")
-st.subheader("Assistente Virtual")
+
+# IA BRIGADA com o tamanho igual ao subheader antigo
+st.markdown(
+    "<h3 style='margin-bottom: 0px;'>IA BRIGADA</h3>", unsafe_allow_html=True
+)
+
+# Assistente Virtual com o tamanho menor, ajustado
+st.markdown(
+    "<p style='font-size: 1.1rem; color: #c0c0c0; font-weight: 600;"
+    " margin-top: 0px;'>Assistente Virtual</p>",
+    unsafe_allow_html=True,
+)
 
 if "autenticado" not in st.session_state:
   st.session_state["autenticado"] = False
@@ -35,7 +45,7 @@ else:
   username = st.session_state["usuario"]
   st.success(f"Bem-vindo, {username}!")
 
-  # Formulário organizado: Pergunta/Descrição em cima, upload discreto embaixo
+  # Formulário organizado: Pergunta em cima, upload embaixo
   with st.form("chat_form", clear_on_submit=True):
     pergunta = st.text_area("Digite sua dúvida ou descrição dos fatos:", height=90)
     uploaded_file = st.file_uploader(
@@ -47,7 +57,6 @@ else:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
-          # Contexto técnico objetivo e focado
           contexto_brigada = (
               "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
               "Se a pergunta for sobre balões ou soltar balões, utilize obrigatoriamente o jargão "
@@ -57,7 +66,6 @@ else:
               "estritamente ao assunto solicitado, sem misturar informações desnecessárias."
           )
 
-          # Correção crítica do modelo para aceitar a requisição corretamente
           model = genai.GenerativeModel("gemini-2.5-flash")
 
           if uploaded_file is not None:
