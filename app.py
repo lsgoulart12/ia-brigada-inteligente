@@ -1,77 +1,85 @@
 import datetime
 import google.generativeai as genai
-import pandas as pd
-from supabase import Client, create_client
 import streamlit as st
 
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
 
-# --- BLOCO DE SEGURANÇA E CONEXÃO ---
-# Garantimos a leitura das chaves diretamente dos secrets do Streamlit
+# Conexão segura
 try:
-    API_KEY = st.secrets["GEMINI_API_KEY"].strip()
-    URL = st.secrets["SUPABASE_URL"].strip()
-    KEY = st.secrets["SUPABASE_KEY"].strip()
+  API_KEY = st.secrets["GEMINI_API_KEY"].strip()
+  genai.configure(api_key=API_KEY)
+except Exception:
+  pass
 
-    genai.configure(api_key=API_KEY)
-    supabase: Client = create_client(URL, KEY)
-except Exception as e:
-    st.error(f"Erro ao inicializar serviços: {e}")
-
-# --- INTERFACE ---
+# --- INTERFACE LIMPA ---
 st.image("logo_brigada.png.png", width=120)
-st.title("▲ IA BRIGADA")
+st.title("IA BRIGADA")
+st.subheader("Assistente Virtual")
 
 if "autenticado" not in st.session_state:
-    st.session_state["autenticado"] = False
+  st.session_state["autenticado"] = False
 
 if not st.session_state["autenticado"]:
-    usuario = st.selectbox("Selecione o usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
-    senha = st.text_input("Senha:", type="password")
-    if st.button("Entrar"):
-        if senha == "senha1" or senha == "senha2":
-            st.session_state["autenticado"] = True
-            st.session_state["usuario"] = usuario.split(" ")[0]
-            st.rerun()
-        else:
-            st.error("Senha incorreta.")
+  usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
+  senha = st.text_input("Senha:", type="password")
+  if st.button("Entrar"):
+    if senha in ["senha1", "senha2"]:
+      st.session_state["autenticado"] = True
+      st.session_state["usuario"] = usuario.split(" ")[0]
+      st.rerun()
+    else:
+      st.error("Senha incorreta.")
 else:
-    username = st.session_state["usuario"]
-    st.success(f"Bem-vindo, {username}!")
+  username = st.session_state["usuario"]
+  st.success(f"Bem-vindo, {username}!")
 
-    # Upload e Dúvida integrados
-    uploaded_file = st.file_uploader("Adicionar foto da ocorrência (opcional)", type=["jpg", "png"])
-    pergunta = st.text_area("Digite sua dúvida técnica:")
+  # Formulário limpo para envio com Enter e upload discreto
+  with st.form("chat_form", clear_on_submit=True):
+    uploaded_file = st.file_uploader(
+        "Anexar foto da ocorrência (opcional)", type=["jpg", "png", "jpeg"]
+    )
+    pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
+    enviar = st.form_submit_button("Enviar Pergunta")
 
-    if st.button("Enviar Pergunta"):
-        if pergunta.strip():
-            # Contexto fixo e imutável (Jargão e Lei)
-            contexto = (
-                "Você é um especialista em Brigada. Jargão: 'Pássaro de Fogo' é balão. "
-                "Base legal: Lei 9.605/98 Art. 42 (crime ambiental). "
-                "Informa sempre: pena de detenção de 1 a 3 anos ou multa, ou ambas. "
-                "Sobre fiança: explicite que é arbitrada pela autoridade policial conforme o caso."
+  if enviar:
+    if pergunta.strip():
+      with st.spinner("Analisando ocorrência..."):
+        try:
+          # Contexto técnico fixo da brigada
+          contexto_brigada = (
+              "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
+              "Jargão operacional obrigatório: 'Pássaro de Fogo' refere-se a balões. "
+              "Base legal obrigatória: Lei de Crimes Ambientais (Lei nº 9.605/98, Art. 42), "
+              "com pena de detenção de 1 a 3 anos ou multa, ou ambas. "
+              "Tratativa de fiança: Explicite que pode ser arbitrada pela autoridade policial em casos "
+              "de menor potencial, mas elevada ou mantida em prisão preventiva em casos de incêndio severo ou risco."
+          )
+
+          model = genai.GenerativeModel("gemini-1.5-flash")
+
+          # Se houver foto anexada, podemos enviar junto com o texto para a IA analisar
+          if uploaded_file is not None:
+            from PIL import Image
+
+            imagem = Image.open(uploaded_file)
+            response = model.generate_content([contexto_brigada, imagem, pergunta])
+          else:
+            response = model.generate_content(
+                f"{contexto_brigada} | Pergunta: {pergunta}"
             )
-            try:
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(f"{contexto} | Pergunta: {pergunta}")
-                st.write("**Resposta:**", response.text)
 
-                # Salvar no Supabase (silencioso para não sujar)
-                try:
-                    supabase.table("interacoes").insert({
-                        "usuario": username,
-                        "pergunta": pergunta,
-                        "timestamp": datetime.datetime.now().isoformat()
-                    }).execute()
-                except:
-                    pass
-            except Exception:
-                st.error("Erro na comunicação com a IA. Verifique sua chave API.")
-        else:
-            st.warning("Por favor, digite sua dúvida.")
+          st.write("**Resposta Técnica:**")
+          st.write(response.text)
 
-    if st.button("Sair"):
-        st.session_state["autenticado"] = False
-        st.rerun()
+        except Exception as e:
+          st.error(
+              "Erro na comunicação com a API do Gemini. Verifique se sua chave"
+              " no painel Secrets começa com 'AIzaSy'."
+          )
+    else:
+      st.warning("Por favor, digite uma pergunta antes de enviar.")
+
+  if st.button("Sair"):
+    st.session_state["autenticado"] = False
+    st.rerun()
