@@ -22,10 +22,10 @@ if "autenticado" not in st.session_state:
   st.session_state["autenticado"] = False
 
 if not st.session_state["autenticado"]:
-  usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)","b3 (Bombeiro3)", "b4 (Bombeiro4)"])
+  usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
   senha = st.text_input("Senha:", type="password")
   if st.button("Entrar"):
-    if senha in ["senha1", "senha2", "senha3", "senha4"]:
+    if senha in ["senha1", "senha2"]:
       st.session_state["autenticado"] = True
       st.session_state["usuario"] = usuario.split(" ")[0]
       st.rerun()
@@ -35,18 +35,12 @@ else:
   username = st.session_state["usuario"]
   st.success(f"Bem-vindo, {username}!")
 
-  # Formulário organizado: Pergunta em cima, upload discreto embaixo
+  # Formulário organizado: Pergunta/Descrição em cima, upload discreto embaixo
   with st.form("chat_form", clear_on_submit=True):
     pergunta = st.text_area("Digite sua dúvida ou descrição dos fatos:", height=90)
-    
-    col1, col2 = st.columns([0.1, 0.9])
-    with col1:
-      uploaded_file = st.file_uploader(
-          "📎", type=["jpg", "png", "jpeg"], label_visibility="collapsed"
-      )
-    with col2:
-      st.write("Anexar foto da ocorrência (opcional)")
-
+    uploaded_file = st.file_uploader(
+        "Anexar foto da ocorrência (opcional)", type=["jpg", "png", "jpeg"]
+    )
     enviar = st.form_submit_button("Enviar Pergunta")
 
   if enviar:
@@ -63,7 +57,8 @@ else:
               "estritamente ao assunto solicitado, sem misturar informações desnecessárias."
           )
 
-          model = genai.GenerativeModel("gemini-1.5-flash")
+          # Correção crítica do modelo para aceitar a requisição corretamente
+          model = genai.GenerativeModel("gemini-2.5-flash")
 
           if uploaded_file is not None:
             imagem = Image.open(uploaded_file)
@@ -77,10 +72,7 @@ else:
           st.write(response.text)
 
         except Exception as e:
-          st.error(
-              f"Erro na comunicação com a API: {e}. Verifique se a sua"
-              " GEMINI_API_KEY e a SUPABASE_URL estão corretas nos Secrets."
-          )
+          st.error(f"Erro na comunicação com a API: {e}")
     else:
       st.warning("Por favor, digite a descrição ou dúvida antes de enviar.")
 
