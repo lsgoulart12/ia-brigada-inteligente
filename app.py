@@ -6,14 +6,14 @@ import streamlit as st
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
 
-# Configuração da chave API (compatível com as novas chaves)
+# Configuração da chave API
 try:
   API_KEY = st.secrets["GEMINI_API_KEY"].strip()
   genai.configure(api_key=API_KEY)
 except Exception:
   pass
 
-# --- INTERFACE LIMPA ---
+# --- INTERFACE LIMPA (Sem o triângulo) ---
 st.image("logo_brigada.png.png", width=120)
 st.title("IA BRIGADA")
 st.subheader("Assistente Virtual")
@@ -52,14 +52,15 @@ else:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
-          # Instrução para ser estritamente objetivo e focado na pergunta
+          # Contexto focado em objetividade e precisão técnica
           instrucao_sistema = (
               "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
               "REGRAS DE RESPOSTA:\n"
               "1. Seja direto, conciso e estritamente objetivo.\n"
-              "2. Responda APENAS o que foi perguntado, sem adicionar informações não solicitadas.\n"
-              "3. Se a pergunta for sobre balões ou jargão, utilize o termo 'Pássaro de Fogo' e cite a Lei 9.605/98 Art. 42. "
-              "Se a pergunta for sobre outro assunto (como EPI), foque exclusivamente nele sem misturar leis de balões."
+              "2. Responda APENAS o que foi perguntado, sem adicionar informações ou leis não solicitadas.\n"
+              "3. Se a pergunta for sobre balões ou soltar balões, utilize estritamente o jargão 'Pássaro de Fogo' "
+              "e cite a Lei de Crimes Ambientais (Lei nº 9.605/98, Art. 42), com pena de 1 a 3 anos ou multa. "
+              "Se a pergunta for sobre outro tema (como EPI, resgate, etc.), foque exclusivamente no assunto perguntado."
           )
 
           model = genai.GenerativeModel("gemini-1.5-flash")
@@ -76,7 +77,10 @@ else:
           st.write(response.text)
 
         except Exception as e:
-          st.error(f"Erro na comunicação com a API: {e}")
+          st.error(
+              f"Erro na comunicação com a API: {e}. Verifique sua chave nos"
+              " Secrets."
+          )
     else:
       st.warning("Por favor, digite uma pergunta antes de enviar.")
 
