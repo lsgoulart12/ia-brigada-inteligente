@@ -1,15 +1,14 @@
+from datetime import datetime
 from PIL import Image
-import datetime
-import google.generativeai as genai
+from google import genai
 import streamlit as st
 
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
 
-# Inicialização segura da chave (compatível com o novo padrão AQ.)
 try:
   API_KEY = st.secrets["GEMINI_API_KEY"].strip()
-  genai.configure(api_key=API_KEY)
+  client = genai.Client(api_key=API_KEY)
 except Exception:
   pass
 
@@ -35,7 +34,6 @@ else:
   username = st.session_state["usuario"]
   st.success(f"Bem-vindo, {username}!")
 
-  # Formulário limpo para envio com Enter e upload discreto
   with st.form("chat_form", clear_on_submit=True):
     uploaded_file = st.file_uploader(
         "Anexar foto da ocorrência (opcional)", type=["jpg", "png", "jpeg"]
@@ -47,25 +45,25 @@ else:
     if pergunta.strip():
       with st.spinner("Analisando ocorrência..."):
         try:
-          # Contexto técnico fixo da brigada (preservando o jargão e a lei)
           contexto_brigada = (
-              "Você é um assistente técnico sênior para bombeiros civis e brigadistas. "
-              "Jargão operacional obrigatório: 'Pássaro de Fogo' refere-se a balões. "
-              "Base legal obrigatória: Lei de Crimes Ambientais (Lei nº 9.605/98, Art. 42), "
-              "com pena de detenção de 1 a 3 anos ou multa, ou ambas. "
-              "Tratativa de fiança: Explicite que pode ser arbitrada pela autoridade policial em casos "
-              "de menor potencial, mas elevada ou mantida em prisão preventiva em casos de incêndio severo ou risco."
+              "Você é um assistente técnico sênior para bombeiros civis e"
+              " brigadistas. Jargão operacional obrigatório: 'Pássaro de Fogo'"
+              " refere-se a balões. Base legal obrigatória: Lei de Crimes"
+              " Ambientais (Lei nº 9.605/98, Art. 42), com pena de detenção de"
+              " 1 a 3 anos ou multa, ou ambas. Tratativa de fiança: Explicite"
+              " que pode ser arbitrada pela autoridade policial em casos de"
+              " menor potencial, mas elevada ou mantida em prisão preventiva em"
+              " casos de incêndio severo ou risco."
           )
 
-          model = genai.GenerativeModel("gemini-1.5-flash")
-
+          contents = [contexto_brigada]
           if uploaded_file is not None:
-            imagem = Image.open(uploaded_file)
-            response = model.generate_content([contexto_brigada, imagem, pergunta])
-          else:
-            response = model.generate_content(
-                f"{contexto_brigada} | Pergunta: {pergunta}"
-            )
+            contents.append(Image.open(uploaded_file))
+          contents.append(pergunta)
+
+          response = client.models.generate_content(
+              model="gemini-2.5-flash", contents=contents
+          )
 
           st.write("**Resposta Técnica:**")
           st.write(response.text)
