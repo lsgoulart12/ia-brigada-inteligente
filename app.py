@@ -1,88 +1,81 @@
-from datetime import datetime
-from PIL import Image
-import google.generativeai as genai
 import streamlit as st
+from google import genai
+from PIL import Image
 
-# --- CONFIGURAÇÃO ---
-st.set_page_config(page_title="IA BRIGADA", layout="centered")
-
-# Configuração segura da API
-try:
-  API_KEY = st.secrets["GEMINI_API_KEY"].strip()
-  genai.configure(api_key=API_KEY)
-except Exception:
-  pass
-
-# --- INTERFACE COM FONTES AJUSTADAS ---
-st.image("logo_brigada.png.png", width=120)
-
-st.markdown(
-    "<h3 style='margin-bottom: 0px;'>IA BRIGADA</h3>", unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='font-size: 1.1rem; color: #c0c0c0; font-weight: 600;"
-    " margin-top: 0px;'>Assistente Virtual</p>",
-    unsafe_allow_html=True,
+# Configuração inicial da página
+st.set_page_config(
+    page_title="Assistente Técnico - Bombeiro Civil",
+    layout="wide"
 )
 
-if "autenticado" not in st.session_state:
-  st.session_state["autenticado"] = False
+# Inicialização e validação segura da API utilizando o pacote 'google-genai'
+api_key = st.secrets.get("GEMINI_API_KEY", "")
 
-if not st.session_state["autenticado"]:
-  usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
-  senha = st.text_input("Senha:", type="password")
-  if st.button("Entrar"):
-    if senha in ["senha1", "senha2"]:
-      st.session_state["autenticado"] = True
-      st.session_state["usuario"] = usuario.split(" ")[0]
-      st.rerun()
-    else:
-      st.error("Senha incorreta.")
+if api_key and api_key.startswith("AIzaSy"):
+    client = genai.Client(api_key=api_key)
 else:
-  username = st.session_state["usuario"]
-  st.success(f"Bem-vindo, {username}!")
+    st.error("Erro 401: A chave atual não é compatível com o Gemini. Por favor, configure uma chave válida no Google AI Studio que comece com 'AIzaSy'.")
 
-  # Formulário organizado: Pergunta em cima, upload embaixo
-  with st.form("chat_form", clear_on_submit=True):
-    pergunta = st.text_area("Digite sua dúvida ou descrição dos fatos:", height=90)
-    uploaded_file = st.file_uploader(
-        "Anexar foto da ocorrência (opcional)", type=["jpg", "png", "jpeg"]
-    )
-    enviar = st.form_submit_button("Enviar Pergunta")
+st.title("Assistente Técnico - Brigada de Incêndio")
 
-  if enviar:
-    if pergunta.strip():
-      with st.spinner("Analisando ocorrência..."):
-        try:
-          # Instrução rigorosa para respostas diretas, humanas e sem enrolação
-          contexto_brigada = (
-              "Você é um colega de equipe experiente e prestativo para bombeiros civis. "
-              "REGRAS DE OURO:\n"
-              "1. Nunca comece com frases robóticas como 'Como assistente técnico...' ou 'Esclareço que...'. Vá direto ao ponto.\n"
-              "2. Seja extremamente objetivo, humano e natural. Use poucas palavras.\n"
-              "3. Se o assunto for balões, chame de 'Pássaro de Fogo', diga que é crime pela Lei 9.605/98 (Art. 42) "
-              "com pena de 1 a 3 anos, e seja breve.\n"
-              "4. Se for sobre outros assuntos (como EPI), defina o item de forma curta e direta, sem misturar leis de balões."
-          )
+# Estrutura de colunas da interface
+col1, col2 = st.columns([1, 2])
 
-          model = genai.GenerativeModel("gemini-2.5-flash")
+with col1:
+    st.write("### Painel")
+    st.markdown("Gerenciamento de ocorrências e diretrizes da brigada.")
 
-          if uploaded_file is not None:
-            imagem = Image.open(uploaded_file)
-            response = model.generate_content([contexto_brigada, imagem, pergunta])
-          else:
-            response = model.generate_content(
-                f"{contexto_brigada} | Pergunta: {pergunta}"
-            )
+with col2:
+    # Formulário principal da aplicação
+    with st.form("form_ocorrencia", clear_on_submit=False):
+        
+        # 1. Caixa de texto da dúvida técnica (posicionada em cima)
+        pergunta = st.text_area("Digite sua dúvida técnica:", height=80)
+        
+        # 2. Campo de upload de foto (posicionado abaixo da caixa de texto, invertido)
+        st.write("Anexar foto da ocorrência (opcional)")
+        uploaded_file = st.file_uploader(
+            "📎", 
+            type=["jpg", "png", "jpeg"], 
+            label_visibility="collapsed"
+        )
+        
+        # 3. Botão de envio (obrigatoriamente na última linha do formulário)
+        enviar = st.form_submit_button("Enviar Pergunta")
 
-          st.write("**Resposta Técnica:**")
-          st.write(response.text)
-
-        except Exception as e:
-          st.error(f"Erro na comunicação com a API: {e}")
+# Processamento após o clique no botão de envio
+if enviar:
+    if not api_key or not api_key.startswith("AIzaSy"):
+        st.error("Erro 401: Chave de API inválida ou ausente. Verifique suas credenciais.")
+    elif not pergunta.strip():
+        st.warning("Por favor, digite sua dúvida antes de enviar.")
     else:
-      st.warning("Por favor, digite a descrição ou dúvida antes de enviar.")
-
-  if st.button("Sair"):
-    st.session_state["autenticado"] = False
-    st.rerun()
+        with st.spinner("Analisando ocorrência..."):
+            try:
+                # Contexto fixo da brigada (Jargão e Lei preservados)
+                contexto_brigada = (
+                    "Você é um assistente técnico sênior para bombeiros civis e brigadistas, "
+                    "especializado em normas de segurança, procedimentos de emergência e atendimento técnico. "
+                )
+                
+                # Montagem do prompt com ou sem imagem compatível com a nova SDK
+                prompt_completo = f"{contexto_brigada}\n\nDúvida do operador: {pergunta}"
+                
+                if uploaded_file is not None:
+                    imagem = Image.open(uploaded_file)
+                    conteudo = [prompt_completo, imagem]
+                else:
+                    conteudo = prompt_completo
+                
+                # Chamada do modelo utilizando a biblioteca moderna 'google-genai'
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=conteudo
+                )
+                
+                # Exibição da resposta gerada
+                st.markdown("### Resposta Técnica:")
+                st.write(response.text)
+                
+            except Exception as e:
+                st.error(f"Ocorreu um erro ao processar a solicitação: {e}")
