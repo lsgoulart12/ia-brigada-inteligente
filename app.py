@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from PIL import Image
 import google.generativeai as genai
 from supabase import create_client, Client
@@ -19,6 +19,28 @@ except Exception as config_err:
     API_KEY = None
     supabase = None
     st.warning(f"Configuração indisponível: {config_err}")
+
+
+def salvar_interacao(usuario, pergunta, resposta):
+    """Salva uma interação sem interromper o fluxo da aplicação."""
+    if supabase is None:
+        st.warning("O histórico não pôde ser salvo porque o banco não está configurado.")
+        return False
+
+    try:
+        supabase.table("interacoes").insert(
+            {
+                "usuario": usuario,
+                "pergunta": pergunta,
+                "resposta": resposta,
+                "data": datetime.now(timezone.utc).isoformat(),
+            }
+        ).execute()
+        return True
+    except Exception as db_err:
+        print(f"Erro ao salvar interação no Supabase: {db_err}")
+        st.warning("A resposta foi gerada, mas não foi possível salvar o histórico.")
+        return False
 
 # --- INTERFACE COM FONTES AJUSTADAS ---
 st.image("logo_brigada.png.png", width=120)
@@ -104,16 +126,7 @@ else:
                 with st.chat_message("assistant"):
                     st.write(resposta_texto)
 
-                # Bloco que salva no Supabase
-                try:
-                    supabase.table("interacoes").insert({
-                        "usuario": username,
-                        "pergunta": pergunta,
-                        "resposta": resposta_texto,
-                        "data": datetime.now().isoformat(),
-                    }, returning="minimal").execute()
-                except Exception as db_err:
-                    print(f"Erro ao salvar: {db_err}")
+                salvar_interacao(username, pergunta, resposta_texto)
             except Exception as e:
                 st.error(f"Erro ao processar a pergunta: {e}")
 
