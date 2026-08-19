@@ -102,15 +102,18 @@ else:
                     st.write(resposta_texto)
 
                 # Grava os dados diretamente no Supabase na tabela correta
+               # Grava os dados diretamente no Supabase na tabela correta
                 try:
+                    print("TENTANDO SALVAR NO SUPABASE...")
                     supabase.table("interacoes").insert({
                         "usuario": username,
                         "pergunta": pergunta,
                         "resposta": resposta_texto,
                         "data": datetime.now().isoformat(),
                     }, returning="minimal").execute()
+                    print("SALVOU COM SUCESSO!")
                 except Exception as db_err:
-                    print(f"Erro ao salvar no Supabase: {db_err}")
+                    print(f"ERRO EXATO DO BANCO: {db_err}")
 
             except Exception as e:
                 st.error(f"Erro na comunicação com a API: {e}")
