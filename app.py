@@ -15,8 +15,10 @@ try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"].strip()
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-except Exception:
-    pass
+except Exception as config_err:
+    API_KEY = None
+    supabase = None
+    st.warning(f"Configuração indisponível: {config_err}")
 
 # --- INTERFACE COM FONTES AJUSTADAS ---
 st.image("logo_brigada.png.png", width=120)
@@ -102,8 +104,6 @@ else:
                 with st.chat_message("assistant"):
                     st.write(resposta_texto)
 
-                # Grava os dados diretamente no Supabase na tabela correta
-               # Grava os dados diretamente no Supabase na tabela correta
                 # Bloco que salva no Supabase
                 try:
                     supabase.table("interacoes").insert({
@@ -113,14 +113,12 @@ else:
                         "data": datetime.now().isoformat(),
                     }, returning="minimal").execute()
                 except Exception as db_err:
-         print(f"Erro ao salvar: {db_err}")
+                    print(f"Erro ao salvar: {db_err}")
+            except Exception as e:
+                st.error(f"Erro ao processar a pergunta: {e}")
 
-if enviar:
-    if not pergunta:
+    if enviar and not pergunta.strip():
         st.warning("Por favor, digite uma pergunta antes de enviar.")
-    else:
-        # Aqui entra a lógica de envio da pergunta para a IA e salvamento
-        pass
 
 if st.button("Sair"):
     st.session_state["autenticado"] = False
