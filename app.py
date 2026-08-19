@@ -1,9 +1,9 @@
 import base64
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from PIL import Image
 import google.generativeai as genai
-from supabase import create_client, Client
+import gspread
 import streamlit as st
 
 # --- CONFIGURAÇÃO ---
@@ -146,59 +146,39 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Configuração segura das APIs e Supabase
+# Configuração segura das APIs
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"].strip()
     genai.configure(api_key=API_KEY)
-
-    SUPABASE_URL = st.secrets["SUPABASE_URL"].strip()
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
-    # Se ocorrer PGRST205, confirme a tabela e recarregue o schema do Supabase.
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 except Exception as config_err:
     API_KEY = None
-    supabase = None
     st.warning("O serviço está temporariamente indisponível. Tente novamente mais tarde.")
+
+PLANILHA_URL = (
+    "https://docs.google.com/spreadsheets/d/"
+    "1QC59C1cb8WZKrY4VRJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
+)
+
+try:
+    credenciais_google = dict(st.secrets["gcp_service_account"])
+    cliente_google = gspread.service_account_from_dict(credenciais_google)
+    planilha = cliente_google.open_by_url(PLANILHA_URL).sheet1
+except Exception as config_err:
+    planilha = None
+    print(f"Erro ao conectar à planilha Google Sheets: {config_err}")
 
 
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
-    """Insere uma interação e mantém o chat funcionando se o banco falhar."""
-    if supabase is None:
-        st.warning("O histórico não foi salvo: o Supabase não está configurado.")
+    """Adiciona uma interação à planilha e mantém o chat funcionando se falhar."""
+    if planilha is None:
+        st.warning("O histórico não foi salvo. Tente novamente mais tarde.")
         return False
 
-    registro = [
-        {
-            "usuario": str(usuario).strip(),
-            "pergunta": str(pergunta).strip(),
-            "resposta": str(resposta).strip(),
-        }
-    ]
-
     try:
-        supabase.table("historico_chat").insert(registro).execute()
+        planilha.append_row([usuario, pergunta, resposta, str(datetime.now())])
         return True
-    except Exception as db_err:
-        erro = getattr(db_err, "message", None) or str(db_err)
-        codigo = getattr(db_err, "code", None)
-        detalhes = getattr(db_err, "details", None)
-        dica = getattr(db_err, "hint", None)
-        diagnostico = " | ".join(
-            parte
-            for parte in (
-                f"código={codigo}" if codigo else "",
-                erro,
-                f"detalhes={detalhes}" if detalhes else "",
-                f"dica={dica}" if dica else "",
-            )
-            if parte
-        )
-        campos_enviados = list(registro[0].keys())
-        print(
-            "Erro ao salvar interação no Supabase | "
-            "tabela=historico_chat | "
-            f"campos={campos_enviados} | diagnóstico={diagnostico}"
-        )
+    except Exception as sheet_err:
+        print(f"Erro ao salvar interação no Google Sheets: {sheet_err}")
         st.error("A resposta foi gerada, mas não foi possível salvar o histórico.")
         return False
 
