@@ -112,18 +112,29 @@ st.markdown(
         }
 
         [data-testid="stFileUploader"] section {
-            border: 1px dashed #cbd4da;
+            align-items: center;
+            background: transparent;
+            border: 0;
+            display: flex;
             min-height: 0;
-            padding: 0.35rem 0.65rem;
-        }
-
-        [data-testid="stFileUploaderDropzoneInstructions"] {
             padding: 0;
         }
 
+        [data-testid="stFileUploaderDropzoneInstructions"] {
+            display: none;
+        }
+
         [data-testid="stFileUploader"] button {
-            min-height: 2rem;
-            padding: 0.2rem 0.7rem;
+            border: 1px solid #d7dee3;
+            border-radius: 8px;
+            color: var(--brand-muted);
+            font-size: 0.78rem;
+            min-height: 1.9rem;
+            padding: 0.1rem 0.65rem;
+        }
+
+        [data-testid="stFileUploader"] small {
+            display: none;
         }
 
         [data-testid="stTextArea"] textarea {
@@ -222,16 +233,18 @@ else:
 
     # Exibe o histórico de conversas anteriores na tela
     for item in st.session_state["historico"]:
-        with st.chat_message(item["role"]):
+        avatar = str(LOGO_PATH) if item["role"] == "assistant" else None
+        with st.chat_message(item["role"], avatar=avatar):
             st.write(item["content"])
 
-    uploaded_file = st.file_uploader(
-        "Anexar foto da ocorrência (opcional)",
-        type=["jpg", "png", "jpeg"],
-        label_visibility="collapsed",
+    entrada = st.chat_input(
+        "Digite sua dúvida ou descrição dos fatos...",
+        accept_file=True,
+        file_type=["jpg", "png", "jpeg"],
     )
-    pergunta = st.chat_input("Digite sua dúvida ou descrição dos fatos...")
-    enviar = pergunta is not None
+    pergunta = entrada.text if entrada is not None else ""
+    uploaded_file = entrada.files[0] if entrada is not None and entrada.files else None
+    enviar = entrada is not None
 
     if enviar and pergunta.strip():
         # Salva e exibe a pergunta do usuário no histórico
@@ -268,7 +281,7 @@ else:
                 st.session_state["historico"].append(
                     {"role": "assistant", "content": resposta_texto}
                 )
-                with st.chat_message("assistant"):
+                with st.chat_message("assistant", avatar=str(LOGO_PATH)):
                     st.write(resposta_texto)
 
                 salvar_interacao(
