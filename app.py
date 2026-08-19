@@ -200,10 +200,16 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
             )
             if parte
         )
-        print(f"Erro ao salvar interação no Supabase: {diagnostico}")
+        campos_enviados = list(registro[0].keys())
+        print(
+            "Erro ao salvar interação no Supabase | "
+            "tabela=historico_chat | "
+            f"campos={campos_enviados} | diagnóstico={diagnostico}"
+        )
         st.error(
             "A resposta foi gerada, mas o histórico não foi salvo. "
-            f"Detalhes: {diagnostico}"
+            "Tabela: historico_chat. "
+            f"Campos: {campos_enviados}. Detalhes: {diagnostico}"
         )
         return False
 
