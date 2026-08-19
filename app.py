@@ -105,17 +105,19 @@ else:
                 # Grava os dados diretamente no Supabase na tabela correta
                # Grava os dados diretamente no Supabase na tabela correta
                 # Bloco que salva no Supabase
+                # Bloco blindado para salvar no Supabase
                 try:
-                    supabase.table("interacoes").insert({
-                        "usuario": username,
-                        "pergunta": pergunta,
-                        "resposta": resposta_texto,
-                        "data": datetime.now().isoformat(),
-                    }, returning="minimal").execute()
+                    dados_para_salvar = {
+                        "usuario": str(username),
+                        "pergunta": str(pergunta),
+                        "resposta": str(resposta_texto),
+                        "data": str(datetime.now().isoformat())
+                    }
+                    
+                    resposta_db = supabase.table("interacoes").insert(dados_para_salvar).execute()
+                    print("Sucesso ao salvar no Supabase:", resposta_db)
                 except Exception as db_err:
-                    print(f"Erro ao salvar: {db_err}")
-            except Exception as e:
-                st.error(f"Erro na comunicação com a API: {e}")
+                    print(f"Erro crítico ao salvar no Supabase: {db_err}")
     elif enviar:
         st.warning("Por favor, digite a descrição ou dúvida antes de enviar.")
 
