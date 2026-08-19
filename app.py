@@ -159,13 +159,32 @@ PLANILHA_URL = (
     "1QC59C1cb8WZKrY4VRJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 )
 
+
+@st.cache_resource(show_spinner=False)
+def conectar_google_sheets(
+    nome_planilha: str | None = None,
+    url_planilha: str | None = None,
+    nome_aba: str | None = None,
+):
+    """Autentica com credentials.json e retorna a aba solicitada."""
+    caminho_credenciais = Path(__file__).with_name("credentials.json")
+    cliente = gspread.service_account(filename=str(caminho_credenciais))
+
+    if nome_planilha:
+        arquivo = cliente.open(nome_planilha)
+    elif url_planilha:
+        arquivo = cliente.open_by_url(url_planilha)
+    else:
+        raise ValueError("Informe nome_planilha ou url_planilha.")
+
+    return arquivo.worksheet(nome_aba) if nome_aba else arquivo.sheet1
+
+
 try:
-    credenciais_google = dict(st.secrets["gcp_service_account"])
-    cliente_google = gspread.service_account_from_dict(credenciais_google)
-    planilha = cliente_google.open_by_url(PLANILHA_URL).sheet1
+    planilha = conectar_google_sheets(url_planilha=PLANILHA_URL)
 except Exception as config_err:
     planilha = None
-    print(f"Erro ao conectar à planilha Google Sheets: {config_err}")
+    print(f"Erro ao conectar ao Google Sheets: {config_err}")
 
 
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
