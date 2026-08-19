@@ -176,7 +176,7 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
     ]
 
     try:
-        supabase.schema("public").table("interacoes").insert(registro).execute()
+        supabase.table("interacoes").insert(registro).execute()
         return True
     except Exception as db_err:
         erro = getattr(db_err, "message", None) or str(db_err)
