@@ -154,6 +154,14 @@ try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"].strip()
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+    # Diagnóstico visual das credenciais carregadas pelo Streamlit.
+    st.write(f"URL do Supabase: {SUPABASE_URL}")
+    st.write(
+        "Chave do Supabase: Carregada com sucesso"
+        if SUPABASE_KEY
+        else "Chave não encontrada!"
+    )
 except Exception as config_err:
     API_KEY = None
     supabase = None
@@ -171,12 +179,11 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
             "usuario": str(usuario).strip(),
             "pergunta": str(pergunta).strip(),
             "resposta": str(resposta).strip(),
-            "data": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
     ]
 
     try:
-        supabase.table("interacoes").insert(registro).execute()
+        supabase.table("historico_chat").insert(registro).execute()
         return True
     except Exception as db_err:
         erro = getattr(db_err, "message", None) or str(db_err)
