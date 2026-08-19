@@ -80,6 +80,7 @@ else:
                     "3. Se o assunto for balões, chame de 'Pássaro de Fogo', diga que é crime pela Lei 9.605/98 (Art. 42) "
                     "com pena de 1 a 3 anos, e seja breve.\n"
                     "4. Se for sobre outros assuntos (como EPI), defina o item de forma curta e direta, sem misturar leis de balões."
+                    "5. Sempre que explicar o uso de extintores, inclua obrigatoriamente: girar o pino (rompendo o lacre), dar um jato de teste para verificar a pressão, e direcionar para a base do fogo Varra o jato de um lado para o outro na base do fogo.\n"
                 )
 
                 model = genai.GenerativeModel("gemini-2.5-flash")
@@ -103,18 +104,16 @@ else:
 
                 # Grava os dados diretamente no Supabase na tabela correta
                # Grava os dados diretamente no Supabase na tabela correta
+                # Bloco que salva no Supabase
                 try:
-                    print("TENTANDO SALVAR NO SUPABASE...")
                     supabase.table("interacoes").insert({
                         "usuario": username,
                         "pergunta": pergunta,
                         "resposta": resposta_texto,
                         "data": datetime.now().isoformat(),
                     }, returning="minimal").execute()
-                    print("SALVOU COM SUCESSO!")
                 except Exception as db_err:
-                    print(f"ERRO EXATO DO BANCO: {db_err}")
-
+                    print(f"Erro ao salvar: {db_err}")
             except Exception as e:
                 st.error(f"Erro na comunicação com a API: {e}")
     elif enviar:
