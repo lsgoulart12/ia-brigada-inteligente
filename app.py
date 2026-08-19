@@ -141,12 +141,6 @@ st.markdown(
             padding-top: 0.35rem;
         }
 
-        [data-testid="stBaseButton-secondary"] {
-            font-size: 0.8rem;
-            min-width: 0;
-            padding: 0.15rem 0.7rem;
-            width: auto;
-        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -293,10 +287,3 @@ else:
                 )
             except Exception as e:
                 st.error(f"Erro ao processar a pergunta: {e}")
-
-if st.session_state.get("autenticado", False):
-    sair = st.button("Sair", type="secondary")
-    if sair:
-        st.session_state["autenticado"] = False
-        st.session_state["historico"] = []
-        st.rerun()
