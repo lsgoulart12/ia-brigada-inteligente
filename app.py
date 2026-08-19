@@ -43,17 +43,6 @@ st.markdown(
             --brand-ink: #17212b;
             --brand-muted: #66727d;
             --brand-line: #e7ebee;
-            --surface: #f7f9fa;
-            --surface-raised: #ffffff;
-            --surface-input: #ffffff;
-            --text: #17212b;
-        }
-
-        html, body, [data-testid="stAppViewContainer"],
-        [data-testid="stAppViewContainer"] > .main,
-        [data-testid="stAppViewContainer"] .main {
-            background: var(--surface) !important;
-            color: var(--text);
         }
 
         [data-testid="stHeader"], [data-testid="stToolbar"] {
@@ -68,7 +57,7 @@ st.markdown(
 
         .brand-header {
             align-items: center;
-            background: color-mix(in srgb, var(--surface) 96%, transparent);
+            background: var(--background-color);
             border-bottom: 1px solid var(--brand-line);
             display: flex;
             gap: 0.8rem;
@@ -80,7 +69,7 @@ st.markdown(
 
         .brand-logo-frame {
             align-items: center;
-            background: var(--surface-raised);
+            background: var(--secondary-background-color);
             border: 1px solid #f0c1b5;
             border-radius: 14px;
             box-shadow: 0 5px 16px rgba(232, 93, 63, 0.18), 0 1px 3px rgba(23, 33, 43, 0.12);
@@ -100,7 +89,7 @@ st.markdown(
         }
 
         .brand-title {
-            color: var(--text);
+            color: var(--text-color);
             font-size: 1.05rem;
             font-weight: 800;
             letter-spacing: 0.04em;
@@ -149,66 +138,14 @@ st.markdown(
         }
 
         [data-testid="stChatInput"] {
-            background: var(--surface);
             padding-top: 0.35rem;
         }
 
-        [data-testid="stChatInput"] textarea,
-        [data-testid="stTextInput"] input,
-        [data-testid="stSelectbox"] [role="combobox"] {
-            background: var(--surface-input);
-            color: var(--text);
-        }
-
-        [data-testid="stMarkdownContainer"],
-        [data-testid="stCaptionContainer"],
-        label, p, h1, h2, h3, h4, h5, h6 {
-            color: var(--text);
-        }
-
-        .logout-footer {
-            bottom: 0.55rem;
-            position: fixed;
-            right: max(1rem, calc((100vw - 780px) / 2));
-            z-index: 1001;
-        }
-
         [data-testid="stBaseButton-secondary"] {
-            background: var(--surface-raised);
-            border: 1px solid var(--brand-line);
-            color: var(--text);
             font-size: 0.8rem;
-            min-height: 2rem;
+            min-width: 0;
             padding: 0.15rem 0.7rem;
-            position: fixed;
-            right: max(1rem, calc((100vw - 780px) / 2));
-            bottom: 0.55rem;
-            z-index: 1001;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --brand-ink: #f2f5f7;
-                --brand-muted: #aab5bd;
-                --brand-line: #35414b;
-                --surface: #11171c;
-                --surface-raised: #1b252c;
-                --surface-input: #202c34;
-                --text: #f2f5f7;
-            }
-
-            [data-testid="stAppViewContainer"] .main,
-            [data-testid="stDecoration"] {
-                background: var(--surface) !important;
-            }
-
-            [data-testid="stFileUploader"] button,
-            [data-testid="stChatInput"] button,
-            [data-testid="stBaseButton-secondary"] {
-                background: var(--surface-raised);
-                border-color: var(--brand-line);
-                color: var(--text);
-            }
+            width: auto;
         }
     </style>
     """,
@@ -357,9 +294,7 @@ else:
             except Exception as e:
                 st.error(f"Erro ao processar a pergunta: {e}")
 
-    st.markdown('<div class="logout-footer">', unsafe_allow_html=True)
     sair = st.button("Sair", type="secondary")
-    st.markdown("</div>", unsafe_allow_html=True)
 
     if sair:
         st.session_state["autenticado"] = False
