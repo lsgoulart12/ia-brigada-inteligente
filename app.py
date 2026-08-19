@@ -105,23 +105,24 @@ else:
                 # Grava os dados diretamente no Supabase na tabela correta
                # Grava os dados diretamente no Supabase na tabela correta
                 # Bloco que salva no Supabase
-                # Bloco blindado para salvar no Supabase
                 try:
-                    dados_para_salvar = {
-                        "usuario": str(username),
-                        "pergunta": str(pergunta),
-                        "resposta": str(resposta_texto),
-                        "data": str(datetime.now().isoformat())
-                    }
-                    
-                    resposta_db = supabase.table("interacoes").insert(dados_para_salvar).execute()
-                    print("Sucesso ao salvar no Supabase:", resposta_db)
+                    supabase.table("interacoes").insert({
+                        "usuario": username,
+                        "pergunta": pergunta,
+                        "resposta": resposta_texto,
+                        "data": datetime.now().isoformat(),
+                    }, returning="minimal").execute()
                 except Exception as db_err:
-                    print(f"Erro crítico ao salvar no Supabase: {db_err}")
-    elif enviar:
-        st.warning("Por favor, digite a descrição ou dúvida antes de enviar.")
+         print(f"Erro ao salvar: {db_err}")
 
-    if st.button("Sair"):
-        st.session_state["autenticado"] = False
-        st.session_state["historico"] = []
-        st.rerun()
+if enviar:
+    if not pergunta:
+        st.warning("Por favor, digite uma pergunta antes de enviar.")
+    else:
+        # Aqui entra a lógica de envio da pergunta para a IA e salvamento
+        pass
+
+if st.button("Sair"):
+    st.session_state["autenticado"] = False
+    st.session_state["historico"] = []
+    st.rerun()
