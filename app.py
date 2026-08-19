@@ -21,25 +21,44 @@ except Exception as config_err:
     st.warning(f"Configuração indisponível: {config_err}")
 
 
-def salvar_interacao(usuario, pergunta, resposta):
-    """Salva uma interação sem interromper o fluxo da aplicação."""
+def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
+    """Insere uma interação e mantém o chat funcionando se o banco falhar."""
     if supabase is None:
-        st.warning("O histórico não pôde ser salvo porque o banco não está configurado.")
+        st.warning("O histórico não foi salvo: o Supabase não está configurado.")
         return False
 
+    registro = [
+        {
+            "usuario": str(usuario).strip(),
+            "pergunta": str(pergunta).strip(),
+            "resposta": str(resposta).strip(),
+            "data": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+    ]
+
     try:
-        supabase.table("interacoes").insert(
-            {
-                "usuario": usuario,
-                "pergunta": pergunta,
-                "resposta": resposta,
-                "data": datetime.now(timezone.utc).isoformat(),
-            }
-        ).execute()
+        supabase.table("interacoes").insert(registro).execute()
         return True
     except Exception as db_err:
-        print(f"Erro ao salvar interação no Supabase: {db_err}")
-        st.warning("A resposta foi gerada, mas não foi possível salvar o histórico.")
+        erro = getattr(db_err, "message", None) or str(db_err)
+        codigo = getattr(db_err, "code", None)
+        detalhes = getattr(db_err, "details", None)
+        dica = getattr(db_err, "hint", None)
+        diagnostico = " | ".join(
+            parte
+            for parte in (
+                f"código={codigo}" if codigo else "",
+                erro,
+                f"detalhes={detalhes}" if detalhes else "",
+                f"dica={dica}" if dica else "",
+            )
+            if parte
+        )
+        print(f"Erro ao salvar interação no Supabase: {diagnostico}")
+        st.error(
+            "A resposta foi gerada, mas o histórico não foi salvo. "
+            f"Detalhes: {diagnostico}"
+        )
         return False
 
 # --- INTERFACE COM FONTES AJUSTADAS ---
@@ -126,7 +145,11 @@ else:
                 with st.chat_message("assistant"):
                     st.write(resposta_texto)
 
-                salvar_interacao(username, pergunta, resposta_texto)
+                salvar_interacao(
+                    usuario=username,
+                    pergunta=pergunta,
+                    resposta=resposta_texto,
+                )
             except Exception as e:
                 st.error(f"Erro ao processar a pergunta: {e}")
 
