@@ -1,4 +1,6 @@
+import base64
 from datetime import datetime, timezone
+from pathlib import Path
 from PIL import Image
 import google.generativeai as genai
 from supabase import create_client, Client
@@ -6,6 +8,136 @@ import streamlit as st
 
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
+
+LOGO_PATH = Path(__file__).with_name("logo_brigada.png.png")
+
+
+def render_brand_header() -> None:
+    """Mantém a marca visível enquanto o histórico do chat é rolado."""
+    try:
+        logo_base64 = base64.b64encode(LOGO_PATH.read_bytes()).decode("ascii")
+    except OSError:
+        logo_base64 = ""
+
+    st.markdown(
+        f"""
+        <div class="brand-header">
+            <div class="brand-logo-frame">
+                <img src="data:image/png;base64,{logo_base64}" alt="Tetraedro do fogo">
+            </div>
+            <div>
+                <div class="brand-title">IA BRIGADA</div>
+                <div class="brand-subtitle">Assistente Virtual</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+st.markdown(
+    """
+    <style>
+        :root {
+            --brand-red: #e85d3f;
+            --brand-ink: #17212b;
+            --brand-muted: #66727d;
+            --brand-line: #e7ebee;
+        }
+
+        [data-testid="stAppViewContainer"] {
+            background: #f7f9fa;
+        }
+
+        [data-testid="stHeader"] {
+            background: transparent;
+        }
+
+        .block-container {
+            max-width: 780px;
+            padding-top: 0.5rem;
+            padding-bottom: 5.5rem;
+        }
+
+        .brand-header {
+            align-items: center;
+            background: rgba(247, 249, 250, 0.96);
+            border-bottom: 1px solid var(--brand-line);
+            display: flex;
+            gap: 0.8rem;
+            padding: 0.65rem 0 0.7rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand-logo-frame {
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid #f0c1b5;
+            border-radius: 14px;
+            box-shadow: 0 5px 16px rgba(232, 93, 63, 0.18), 0 1px 3px rgba(23, 33, 43, 0.12);
+            display: flex;
+            height: 48px;
+            justify-content: center;
+            overflow: hidden;
+            width: 48px;
+        }
+
+        .brand-logo-frame img {
+            display: block;
+            height: 100%;
+            object-fit: contain;
+            padding: 4px;
+            width: 100%;
+        }
+
+        .brand-title {
+            color: var(--brand-ink);
+            font-size: 1.05rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1.1;
+        }
+
+        .brand-subtitle {
+            color: var(--brand-muted);
+            font-size: 0.82rem;
+            margin-top: 0.2rem;
+        }
+
+        [data-testid="stChatMessage"] {
+            padding-bottom: 0.35rem;
+            padding-top: 0.35rem;
+        }
+
+        [data-testid="stFileUploader"] section {
+            border: 1px dashed #cbd4da;
+            min-height: 0;
+            padding: 0.35rem 0.65rem;
+        }
+
+        [data-testid="stFileUploaderDropzoneInstructions"] {
+            padding: 0;
+        }
+
+        [data-testid="stFileUploader"] button {
+            min-height: 2rem;
+            padding: 0.2rem 0.7rem;
+        }
+
+        [data-testid="stTextArea"] textarea {
+            min-height: 74px;
+        }
+
+        [data-testid="stChatInput"] {
+            background: #f7f9fa;
+            padding-top: 0.35rem;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Configuração segura das APIs e Supabase
 try:
@@ -37,7 +169,7 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
     ]
 
     try:
-        supabase.table("interacoes").insert(registro).execute()
+        supabase.schema("public").table("interacoes").insert(registro).execute()
         return True
     except Exception as db_err:
         erro = getattr(db_err, "message", None) or str(db_err)
@@ -61,25 +193,19 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
         )
         return False
 
-# --- INTERFACE COM FONTES AJUSTADAS ---
-st.image("logo_brigada.png.png", width=120)
-
-st.markdown(
-    "<h3 style='margin-bottom: 0px;'>IA BRIGADA</h3>", unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='font-size: 1.1rem; color: #c0c0c0; font-weight: 600;"
-    " margin-top: 0px;'>Assistente Virtual</p>",
-    unsafe_allow_html=True,
-)
+# --- IDENTIDADE VISUAL PERSISTENTE ---
+render_brand_header()
 
 if "autenticado" not in st.session_state:
     st.session_state["autenticado"] = False
 
 if not st.session_state["autenticado"]:
-    usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
-    senha = st.text_input("Senha:", type="password")
-    if st.button("Entrar"):
+    with st.form("login_form", clear_on_submit=False):
+        usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
+        senha = st.text_input("Senha:", type="password")
+        entrar = st.form_submit_button("Entrar", use_container_width=True)
+
+    if entrar:
         if senha in ["senha1", "senha2"]:
             st.session_state["autenticado"] = True
             st.session_state["usuario"] = usuario.split(" ")[0]
@@ -88,7 +214,7 @@ if not st.session_state["autenticado"]:
             st.error("Senha incorreta.")
 else:
     username = st.session_state["usuario"]
-    st.success(f"Bem-vindo, {username}!")
+    st.caption(f"Conectado como {username}")
 
     # Inicializa o histórico se não existir
     if "historico" not in st.session_state:
@@ -99,13 +225,13 @@ else:
         with st.chat_message(item["role"]):
             st.write(item["content"])
 
-    # Formulário organizado: Pergunta em cima, upload embaixo
-    with st.form("chat_form", clear_on_submit=True):
-        pergunta = st.text_area("Digite sua dúvida ou descrição dos fatos:", height=90)
-        uploaded_file = st.file_uploader(
-            "Anexar foto da ocorrência (opcional)", type=["jpg", "png", "jpeg"]
-        )
-        enviar = st.form_submit_button("Enviar Pergunta")
+    uploaded_file = st.file_uploader(
+        "Anexar foto da ocorrência (opcional)",
+        type=["jpg", "png", "jpeg"],
+        label_visibility="collapsed",
+    )
+    pergunta = st.chat_input("Digite sua dúvida ou descrição dos fatos...")
+    enviar = pergunta is not None
 
     if enviar and pergunta.strip():
         # Salva e exibe a pergunta do usuário no histórico
@@ -153,10 +279,7 @@ else:
             except Exception as e:
                 st.error(f"Erro ao processar a pergunta: {e}")
 
-    if enviar and not pergunta.strip():
-        st.warning("Por favor, digite uma pergunta antes de enviar.")
-
-if st.button("Sair"):
-    st.session_state["autenticado"] = False
-    st.session_state["historico"] = []
-    st.rerun()
+    if st.button("Sair", type="secondary"):
+        st.session_state["autenticado"] = False
+        st.session_state["historico"] = []
+        st.rerun()
