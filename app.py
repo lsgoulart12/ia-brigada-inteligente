@@ -294,8 +294,8 @@ else:
             except Exception as e:
                 st.error(f"Erro ao processar a pergunta: {e}")
 
+if st.session_state.get("autenticado", False):
     sair = st.button("Sair", type="secondary")
-
     if sair:
         st.session_state["autenticado"] = False
         st.session_state["historico"] = []
