@@ -153,19 +153,12 @@ try:
 
     SUPABASE_URL = st.secrets["SUPABASE_URL"].strip()
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"].strip()
+    # Se ocorrer PGRST205, confirme a tabela e recarregue o schema do Supabase.
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-    # Diagnóstico visual das credenciais carregadas pelo Streamlit.
-    st.write(f"URL do Supabase: {SUPABASE_URL}")
-    st.write(
-        "Chave do Supabase: Carregada com sucesso"
-        if SUPABASE_KEY
-        else "Chave não encontrada!"
-    )
 except Exception as config_err:
     API_KEY = None
     supabase = None
-    st.warning(f"Configuração indisponível: {config_err}")
+    st.warning("O serviço está temporariamente indisponível. Tente novamente mais tarde.")
 
 
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
@@ -206,11 +199,7 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
             "tabela=historico_chat | "
             f"campos={campos_enviados} | diagnóstico={diagnostico}"
         )
-        st.error(
-            "A resposta foi gerada, mas o histórico não foi salvo. "
-            "Tabela: historico_chat. "
-            f"Campos: {campos_enviados}. Detalhes: {diagnostico}"
-        )
+        st.error("A resposta foi gerada, mas não foi possível salvar o histórico.")
         return False
 
 # --- IDENTIDADE VISUAL PERSISTENTE ---
@@ -299,4 +288,4 @@ else:
                     resposta=resposta_texto,
                 )
             except Exception as e:
-                st.error(f"Erro ao processar a pergunta: {e}")
+                st.error("Não foi possível processar sua pergunta. Tente novamente.")
