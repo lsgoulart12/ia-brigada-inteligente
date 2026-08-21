@@ -154,10 +154,7 @@ except Exception as config_err:
     API_KEY = None
     st.warning("O serviço está temporariamente indisponível. Tente novamente mais tarde.")
 
-PLANILHA_URL = (
-    "https://docs.google.com/spreadsheets/d/"
-    "1QC59C1cb8WZKrY4VRJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
-)
+PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 
 
 @st.cache_resource(show_spinner=False)
@@ -166,9 +163,9 @@ def conectar_google_sheets(
     url_planilha: str | None = None,
     nome_aba: str | None = None,
 ):
-    """Autentica com credentials.json e retorna a aba solicitada."""
-    caminho_credenciais = Path(__file__).with_name("credentials.json")
-    cliente = gspread.service_account(filename=str(caminho_credenciais))
+    """Autentica usando os segredos do Streamlit e retorna a aba solicitada."""
+    credenciais_dict = dict(st.secrets["gspread"])
+    cliente = gspread.service_account_from_dict(credenciais_dict)
 
     if nome_planilha:
         arquivo = cliente.open(nome_planilha)
