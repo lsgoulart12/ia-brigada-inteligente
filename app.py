@@ -148,12 +148,11 @@ st.markdown(
 )
 
 # Configuração isolada do Gemini: não usa as credenciais do Google Sheets.
-@st.cache_resource(show_spinner=False)
-def get_gemini_client():
-    return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("Chave de API não encontrada nos Secrets!")
+    st.stop()
 
-
-client = get_gemini_client()
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 
@@ -170,12 +169,12 @@ def conectar_google_sheets():
 def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
     """Envia uma pergunta ao Gemini usando somente a chave da API do Gemini."""
     try:
-        conteudo = [contexto, imagem, pergunta_usuario] if imagem is not None else f"{contexto} | Pergunta: {pergunta_usuario}"
-        resposta = client.models.generate_content(
+        response = client.models.generate_content(
             model="gemini-1.5-flash",
-            contents=conteudo,
+            contents=pergunta_usuario,
         )
-        return resposta.text
+        resposta_texto = response.text
+        return resposta_texto
     except Exception as err:
         print(f"Erro detalhado do Gemini: {err}", flush=True)
         traceback.print_exc()
