@@ -149,10 +149,15 @@ st.markdown(
 
 # Configuração isolada do Gemini: não usa as credenciais do Google Sheets.
 if "GEMINI_API_KEY" not in st.secrets:
-    st.error("Chave de API não encontrada nos Secrets!")
+    st.error("A chave GEMINI_API_KEY não está configurada nos Secrets do Streamlit!")
     st.stop()
 
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+with st.sidebar.expander("Diagnóstico do Gemini"):
+    chave_gemini = str(st.secrets["GEMINI_API_KEY"])
+    st.caption(f"Prefixo: {chave_gemini[:6]}")
+    st.caption(f"Tamanho: {len(chave_gemini)} caracteres")
 
 PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 
@@ -177,6 +182,7 @@ def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
         return resposta_texto
     except Exception as err:
         print(f"Erro detalhado do Gemini: {err}", flush=True)
+        print(f"Tipo do cliente Gemini: {type(client)}", flush=True)
         traceback.print_exc()
         st.error(f"Erro detalhado do Gemini: {err}")
         return None
