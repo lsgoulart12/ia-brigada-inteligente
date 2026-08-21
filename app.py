@@ -149,40 +149,46 @@ st.markdown(
 
 # Configuração segura das APIs
 try:
-    API_KEY = st.secrets["GEMINI_API_KEY"].strip()
-    genai.configure(api_key=API_KEY)
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"].strip())
 except Exception as config_err:
-    API_KEY = None
+    print(f"Erro ao configurar o Gemini: {config_err}", flush=True)
+    traceback.print_exc()
     st.warning("O serviço está temporariamente indisponível. Tente novamente mais tarde.")
 
 PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 
 
 @st.cache_resource(show_spinner=False)
-def conectar_google_sheets(
-    nome_planilha: str | None = None,
-    url_planilha: str | None = None,
-    nome_aba: str | None = None,
-):
-    """Autentica usando os segredos do Streamlit e retorna a aba solicitada."""
-    credenciais_dict = dict(st.secrets["gspread"])
-    cliente = gspread.service_account_from_dict(credenciais_dict)
+def conectar_google_sheets():
+    """Autentica no Google Sheets usando os segredos do Streamlit."""
+    credenciais = dict(st.secrets["gspread"])
+    if "\\n" in credenciais.get("private_key", ""):
+        credenciais["private_key"] = credenciais["private_key"].replace("\\n", "\n")
+    return gspread.service_account_from_dict(credenciais)
 
-    if nome_planilha:
-        arquivo = cliente.open(nome_planilha)
-    elif url_planilha:
-        arquivo = cliente.open_by_url(url_planilha)
-    else:
-        raise ValueError("Informe nome_planilha ou url_planilha.")
 
-    return arquivo.worksheet(nome_aba) if nome_aba else arquivo.sheet1
+def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
+    """Envia uma pergunta ao Gemini e retorna o texto da resposta."""
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        conteudo = [contexto, imagem, pergunta_usuario] if imagem is not None else f"{contexto} | Pergunta: {pergunta_usuario}"
+        resposta = model.generate_content(conteudo)
+        return resposta.text
+    except Exception as err:
+        print(f"Erro detalhado do Gemini: {err}", flush=True)
+        traceback.print_exc()
+        st.error(f"Erro detalhado do Gemini: {err}")
+        return None
+
 
 
 try:
-    planilha = conectar_google_sheets(url_planilha=PLANILHA_URL)
+    cliente_google_sheets = conectar_google_sheets()
+    planilha = cliente_google_sheets.open_by_url(PLANILHA_URL).sheet1
 except Exception as config_err:
     planilha = None
-    print(f"Erro ao conectar ao Google Sheets: {config_err}")
+    print(f"Erro ao conectar ao Google Sheets: {config_err}", flush=True)
+    traceback.print_exc()
 
 
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
@@ -260,17 +266,21 @@ else:
                     "5. Sempre que explicar o uso de extintores, inclua obrigatoriamente: girar o pino (rompendo o lacre), dar um jato de teste para verificar a pressão, e direcionar para a base do fogo Varra o jato de um lado para o outro na base do fogo.\n"
                 )
 
-                model = genai.GenerativeModel("gemini-2.5-flash")
-
                 if uploaded_file is not None:
                     imagem = Image.open(uploaded_file)
-                    response = model.generate_content([contexto_brigada, imagem, pergunta])
+                    resposta_texto = perguntar_ao_gemini(
+                        pergunta_usuario=pergunta,
+                        contexto=contexto_brigada,
+                        imagem=imagem,
+                    )
                 else:
-                    response = model.generate_content(
-                        f"{contexto_brigada} | Pergunta: {pergunta}"
+                    resposta_texto = perguntar_ao_gemini(
+                        pergunta_usuario=pergunta,
+                        contexto=contexto_brigada,
                     )
 
-                resposta_texto = response.text
+                if resposta_texto is None:
+                    st.stop()
 
                 # Salva e exibe a resposta da IA no histórico
                 st.session_state["historico"].append(
