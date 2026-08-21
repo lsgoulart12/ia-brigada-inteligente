@@ -149,7 +149,7 @@ st.markdown(
 
 # Configuração segura das APIs
 try:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"].strip())
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except Exception as config_err:
     print(f"Erro ao configurar o Gemini: {config_err}", flush=True)
     traceback.print_exc()
@@ -170,7 +170,7 @@ def conectar_google_sheets():
 def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
     """Envia uma pergunta ao Gemini e retorna o texto da resposta."""
     try:
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         conteudo = [contexto, imagem, pergunta_usuario] if imagem is not None else f"{contexto} | Pergunta: {pergunta_usuario}"
         resposta = model.generate_content(conteudo)
         return resposta.text
