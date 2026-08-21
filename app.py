@@ -1,4 +1,5 @@
 import base64
+import traceback
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
@@ -284,4 +285,6 @@ else:
                     resposta=resposta_texto,
                 )
             except Exception as e:
+                print(f"Erro ao processar pergunta: {e}", flush=True)
+                traceback.print_exc()
                 st.error("Não foi possível processar sua pergunta. Tente novamente.")
