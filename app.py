@@ -147,10 +147,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Configuração segura das APIs
+# Configuração isolada do Gemini: não usa as credenciais do Google Sheets.
 try:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    GEMINI_API_KEY = str(st.secrets["GEMINI_API_KEY"]).strip()
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY está vazia.")
 except Exception as config_err:
+    GEMINI_API_KEY = None
     print(f"Erro ao configurar o Gemini: {config_err}", flush=True)
     traceback.print_exc()
     st.warning("O serviço está temporariamente indisponível. Tente novamente mais tarde.")
@@ -168,8 +171,12 @@ def conectar_google_sheets():
 
 
 def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
-    """Envia uma pergunta ao Gemini e retorna o texto da resposta."""
+    """Envia uma pergunta ao Gemini usando somente a chave da API do Gemini."""
     try:
+        if not GEMINI_API_KEY:
+            raise RuntimeError("GEMINI_API_KEY não foi configurada.")
+
+        genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel("gemini-1.5-flash")
         conteudo = [contexto, imagem, pergunta_usuario] if imagem is not None else f"{contexto} | Pergunta: {pergunta_usuario}"
         resposta = model.generate_content(conteudo)
