@@ -3,8 +3,8 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
-from google import genai
 import gspread
+import requests
 import streamlit as st
 
 # --- CONFIGURAÇÃO ---
@@ -147,18 +147,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Configuração isolada do Gemini: não usa as credenciais do Google Sheets.
-if "GEMINI_API_KEY" not in st.secrets:
-    st.error("A chave GEMINI_API_KEY não está configurada nos Secrets do Streamlit!")
-    st.stop()
-
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-
-with st.sidebar.expander("Diagnóstico do Gemini"):
-    chave_gemini = str(st.secrets["GEMINI_API_KEY"])
-    st.caption(f"Prefixo: {chave_gemini[:6]}")
-    st.caption(f"Tamanho: {len(chave_gemini)} caracteres")
-
 PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 
 
@@ -171,18 +159,30 @@ def conectar_google_sheets():
     return gspread.service_account_from_dict(credenciais)
 
 
-def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
-    """Envia uma pergunta ao Gemini usando somente a chave da API do Gemini."""
+def responder_gemini_rest(prompt_texto: str):
+    """Envia um prompt ao Gemini pela API REST."""
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=pergunta_usuario,
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+        params = {"key": st.secrets["GEMINI_API_KEY"]}
+        payload = {
+            "contents": [{"parts": [{"text": prompt_texto}]}]
+        }
+        response = requests.post(
+            url,
+            params=params,
+            json=payload,
+            timeout=60,
         )
-        resposta_texto = response.text
-        return resposta_texto
+        if response.status_code == 200:
+            data = response.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+
+        erro = f"Erro na API ({response.status_code}): {response.text}"
+        print(erro, flush=True)
+        st.error(erro)
+        return None
     except Exception as err:
         print(f"Erro detalhado do Gemini: {err}", flush=True)
-        print(f"Tipo do cliente Gemini: {type(client)}", flush=True)
         traceback.print_exc()
         st.error(f"Erro detalhado do Gemini: {err}")
         return None
@@ -275,15 +275,12 @@ else:
 
                 if uploaded_file is not None:
                     imagem = Image.open(uploaded_file)
-                    resposta_texto = perguntar_ao_gemini(
-                        pergunta_usuario=pergunta,
-                        contexto=contexto_brigada,
-                        imagem=imagem,
+                    resposta_texto = responder_gemini_rest(
+                        f"{contexto_brigada} | Pergunta: {pergunta}"
                     )
                 else:
-                    resposta_texto = perguntar_ao_gemini(
-                        pergunta_usuario=pergunta,
-                        contexto=contexto_brigada,
+                    resposta_texto = responder_gemini_rest(
+                        f"{contexto_brigada} | Pergunta: {pergunta}"
                     )
 
                 if resposta_texto is None:
