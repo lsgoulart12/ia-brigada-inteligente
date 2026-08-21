@@ -3,7 +3,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
-import google.generativeai as genai
+from google import genai
 import gspread
 import streamlit as st
 
@@ -148,15 +148,12 @@ st.markdown(
 )
 
 # Configuração isolada do Gemini: não usa as credenciais do Google Sheets.
-try:
-    GEMINI_API_KEY = str(st.secrets["GEMINI_API_KEY"]).strip()
-    if not GEMINI_API_KEY:
-        raise ValueError("GEMINI_API_KEY está vazia.")
-except Exception as config_err:
-    GEMINI_API_KEY = None
-    print(f"Erro ao configurar o Gemini: {config_err}", flush=True)
-    traceback.print_exc()
-    st.warning("O serviço está temporariamente indisponível. Tente novamente mais tarde.")
+@st.cache_resource(show_spinner=False)
+def get_gemini_client():
+    return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+
+client = get_gemini_client()
 
 PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
 
@@ -173,13 +170,11 @@ def conectar_google_sheets():
 def perguntar_ao_gemini(pergunta_usuario: str, contexto: str = "", imagem=None):
     """Envia uma pergunta ao Gemini usando somente a chave da API do Gemini."""
     try:
-        if not GEMINI_API_KEY:
-            raise RuntimeError("GEMINI_API_KEY não foi configurada.")
-
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-flash")
         conteudo = [contexto, imagem, pergunta_usuario] if imagem is not None else f"{contexto} | Pergunta: {pergunta_usuario}"
-        resposta = model.generate_content(conteudo)
+        resposta = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=conteudo,
+        )
         return resposta.text
     except Exception as err:
         print(f"Erro detalhado do Gemini: {err}", flush=True)
@@ -289,18 +284,18 @@ else:
                 if resposta_texto is None:
                     st.stop()
 
+                salvar_interacao(
+                    usuario=username,
+                    pergunta=pergunta,
+                    resposta=resposta_texto,
+                )
+
                 # Salva e exibe a resposta da IA no histórico
                 st.session_state["historico"].append(
                     {"role": "assistant", "content": resposta_texto}
                 )
                 with st.chat_message("assistant", avatar=str(LOGO_PATH)):
                     st.write(resposta_texto)
-
-                salvar_interacao(
-                    usuario=username,
-                    pergunta=pergunta,
-                    resposta=resposta_texto,
-                )
             except Exception as e:
                 print(f"Erro ao processar pergunta: {e}", flush=True)
                 traceback.print_exc()
