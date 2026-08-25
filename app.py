@@ -254,6 +254,9 @@ def carregar_extintores() -> pd.DataFrame:
             extintores.append(registro[4:9])
             linhas_planilha.append(numero_linha)
 
+    if not extintores:
+        return pd.DataFrame(columns=colunas)
+
     return pd.DataFrame(extintores, columns=colunas, index=linhas_planilha)
 
 
