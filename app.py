@@ -162,12 +162,22 @@ def conectar_google_sheets():
     return gspread.service_account_from_dict(credenciais)
 
 
-def responder_gemini_rest(prompt_texto: str):
+def responder_gemini_rest(prompt_texto: str, historico=None):
     """Envia um prompt ao Gemini usando a biblioteca oficial atualizada."""
     try:
+        mensagens = []
+        for item in historico or []:
+            if item["role"] in ["user", "assistant"]:
+                mensagens.append(
+                    {
+                        "role": "model" if item["role"] == "assistant" else "user",
+                        "parts": [{"text": item["content"]}],
+                    }
+                )
+        mensagens.append({"role": "user", "parts": [{"text": prompt_texto}]})
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt_texto,
+            contents=mensagens,
         )
         return response.text
     except Exception as err:
@@ -342,18 +352,22 @@ else:
                     "2. Seja extremamente objetivo, humano e natural. Use poucas palavras.\n"
                     "3. Se o assunto for balões, chame de 'Pássaro de Fogo', diga que é crime pela Lei 9.605/98 (Art. 42) "
                     "com pena de 1 a 3 anos, e seja breve.\n"
-                    "4. Se for sobre outros assuntos (como EPI), defina o item de forma curta e direta, sem misturar leis de balões."
-                    "5. Sempre que explicar o uso de extintores, inclua obrigatoriamente: girar o pino (rompendo o lacre), dar um jato de teste para verificar a pressão, e direcionar para a base do fogo Varra o jato de um lado para o outro na base do fogo.\n"
+                    "4. Se for sobre outros assuntos (como EPI), defina o item de forma curta e direta, sem misturar leis de balões.\n"
+                    "5. Use obrigatoriamente o histórico da conversa para interpretar perguntas de seguimento e manter o contexto do equipamento ou ocorrência mencionada. Nunca responda de forma genérica quando o histórico definir o cenário.\n"
+                    "6. Em incêndio envolvendo equipamento elétrico, se o aparelho não foi desenergizado, indique obrigatoriamente extintor de CO2 ou PQS. Se foi desenergizado, retirado da tomada, pode indicar Água Pressurizada (AP), CO2 ou PQS.\n"
+                    "7. Informe somente o procedimento técnico necessário, sem repetir instruções óbvias como girar o pino ou romper o lacre, salvo se forem estritamente necessárias.\n"
                 )
 
                 if uploaded_file is not None:
                     imagem = Image.open(uploaded_file)
                     resposta_texto = responder_gemini_rest(
-                        f"{contexto_brigada} | Pergunta: {pergunta}"
+                        f"{contexto_brigada} | Pergunta: {pergunta}",
+                        st.session_state["historico"][:-1],
                     )
                 else:
                     resposta_texto = responder_gemini_rest(
-                        f"{contexto_brigada} | Pergunta: {pergunta}"
+                        f"{contexto_brigada} | Pergunta: {pergunta}",
+                        st.session_state["historico"][:-1],
                     )
 
                 if resposta_texto is None:
