@@ -394,6 +394,7 @@ if not st.session_state["autenticado"]:
         if acesso_valido:
             st.session_state["autenticado"] = True
             st.session_state["usuario"] = usuario.split(" ")[0]
+            st.session_state["administrador_autorizado"] = usuario == "administrador"
             st.rerun()
         else:
             st.error("Senha incorreta.")
@@ -401,12 +402,17 @@ else:
     username = st.session_state["usuario"]
     st.caption(f"Conectado como {username}")
     if username == "administrador":
-        senha_administrador = st.sidebar.text_input(
-            "Senha administrativa",
-            type="password",
-        )
-        administrador = senha_administrador == "8920"
+        administrador = st.session_state.get("administrador_autorizado", False)
+        if not administrador:
+            senha_administrador = st.sidebar.text_input(
+                "Senha administrativa",
+                type="password",
+            )
+            if senha_administrador == "8920":
+                st.session_state["administrador_autorizado"] = True
+                administrador = True
     else:
+        st.session_state["administrador_autorizado"] = False
         administrador = False
 
     # Inicializa o histórico se não existir
