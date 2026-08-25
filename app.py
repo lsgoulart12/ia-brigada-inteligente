@@ -399,7 +399,18 @@ else:
     if modo_cadastro:
         with st.form("cadastro_extintor_form", clear_on_submit=True):
             local_extintor = st.text_input("Local ou estúdio")
-            tipo_extintor = st.selectbox("Tipo de extintor", ["CO2", "PQS", "AP"])
+            tipo_extintor = st.selectbox(
+                "Tipo de extintor",
+                [
+                    "Água Pressurizada (AP)",
+                    "Pó Químico Seco BC (PQS BC)",
+                    "Pó Químico ABC (PQS ABC)",
+                    "Dióxido de Carbono (CO2)",
+                    "Espuma Mecânica",
+                    "Acetato de Potássio (Classe K / Cozinhas)",
+                    "Pó Especial (para Classes D / Metais Combustíveis)",
+                ],
+            )
             identificacao_extintor = st.text_input("Número de identificação")
             validade_extintor = st.date_input("Data de validade")
             cadastrar = st.form_submit_button("Cadastrar extintor")
