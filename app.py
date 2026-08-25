@@ -365,7 +365,7 @@ if not st.session_state["autenticado"]:
         acesso_valido = (
             senha == "8920"
             if usuario == "administrador"
-            else senha in ["senha1", "senha2"]
+            else senha == usuario.split(" ")[0]
         )
         if acesso_valido:
             st.session_state["autenticado"] = True
