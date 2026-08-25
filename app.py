@@ -280,11 +280,8 @@ def render_alerta_extintores() -> None:
         return
 
     extintores = extintores.copy()
-    extintores["validade"] = pd.to_datetime(
-        extintores["validade"], errors="coerce"
-    ).dt.date
-    hoje = datetime.now().date()
-    limite = hoje + pd.Timedelta(days=15)
+    extintores["validade"] = pd.to_datetime(extintores["validade"], errors="coerce")
+    limite = pd.to_datetime(datetime.now() + pd.Timedelta(days=15))
     alerta = extintores[extintores["validade"].notna() & (extintores["validade"] <= limite)]
     if alerta.empty:
         return
