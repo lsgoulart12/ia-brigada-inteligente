@@ -234,17 +234,33 @@ def cadastrar_extintor(usuario: str, local: str, tipo: str, identificacao: str, 
 @st.cache_data(ttl=60, show_spinner=False)
 def carregar_extintores() -> pd.DataFrame:
     """Carrega os extintores registrados nas colunas reservadas da planilha."""
-    colunas = ["usuario", "local", "tipo", "identificacao", "validade"]
+    colunas = ["usuario", "local", "tipo", "identificacao", "validade", "linha_planilha"]
     if planilha is None:
         return pd.DataFrame(columns=colunas)
 
     registros = planilha.get_all_values()
     extintores = []
-    for registro in registros:
+    for numero_linha, registro in enumerate(registros, start=1):
         if len(registro) >= 9 and any(str(valor).strip() for valor in registro[4:9]):
-            extintores.append(registro[4:9])
+            extintores.append([*registro[4:9], numero_linha])
 
     return pd.DataFrame(extintores, columns=colunas)
+
+
+def excluir_extintor(linha_planilha: int) -> bool:
+    """Exclui o extintor correspondente à linha original da planilha."""
+    if planilha is None:
+        st.error("Não foi possível acessar a planilha para excluir o extintor.")
+        return False
+
+    try:
+        planilha.delete_rows(linha_planilha)
+        carregar_extintores.clear()
+        return True
+    except Exception as extinguisher_err:
+        print(f"Erro ao excluir extintor: {extinguisher_err}", flush=True)
+        st.error("Não foi possível excluir o extintor.")
+        return False
 
 
 def render_alerta_extintores() -> None:
@@ -264,11 +280,19 @@ def render_alerta_extintores() -> None:
         "<div style='color:#b42318;font-weight:700;'>Atenção: extintores vencidos ou com validade em até 15 dias.</div>",
         unsafe_allow_html=True,
     )
-    st.dataframe(
-        alerta.style.set_properties(color="#b42318", font_weight="700"),
-        hide_index=True,
-        use_container_width=True,
-    )
+    cabecalho = st.columns([1, 2, 2, 2, 1])
+    for coluna, titulo in zip(cabecalho, ["Usuário", "Local", "Tipo", "Identificação", "Ação"]):
+        coluna.markdown(f"**{titulo}**")
+
+    for _, extintor in alerta.iterrows():
+        colunas = st.columns([1, 2, 2, 2, 1])
+        colunas[0].markdown(f":red[{extintor['usuario']}]")
+        colunas[1].markdown(f":red[{extintor['local']}]")
+        colunas[2].markdown(f":red[{extintor['tipo']}]")
+        colunas[3].markdown(f":red[{extintor['identificacao']}] - {extintor['validade']}")
+        if colunas[4].button("Excluir", key=f"excluir_extintor_{extintor['linha_planilha']}"):
+            if excluir_extintor(int(extintor["linha_planilha"])):
+                st.rerun()
 
 
 @st.cache_data(ttl=60, show_spinner=False)
