@@ -289,7 +289,15 @@ if not st.session_state["autenticado"]:
     with st.form("login_form", clear_on_submit=False):
         usuario = st.selectbox(
             "Usuário:",
-            ["b1 (Bombeiro1)", "b2 (Bombeiro2)", "administrador"],
+            [
+                "b1 (Bombeiro1)",
+                "b2 (Bombeiro2)",
+                "b3 (Bombeiro3)",
+                "b4 (Bombeiro4)",
+                "b5 (Bombeiro5)",
+                "b6 (Bombeiro6)",
+                "administrador",
+            ],
         )
         senha = st.text_input("Senha:", type="password")
         entrar = st.form_submit_button("Entrar", use_container_width=True)
