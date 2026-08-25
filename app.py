@@ -162,7 +162,7 @@ def conectar_google_sheets():
 def responder_gemini_rest(prompt_texto: str):
     """Envia um prompt ao Gemini pela API REST."""
     try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
         headers = {
             "Content-Type": "application/json",
             "x-goog-api-key": st.secrets["GEMINI_API_KEY"],
@@ -178,7 +178,10 @@ def responder_gemini_rest(prompt_texto: str):
         if response.status_code == 200:
             return response.json()["candidates"][0]["content"]["parts"][0]["text"]
 
-        return f"Erro na API ({response.status_code}): {response.text}"
+        erro = f"Erro na API ({response.status_code}): {response.text}"
+        print(erro, flush=True)
+        st.error(erro)
+        return None
     except Exception as err:
         print(f"Erro detalhado do Gemini: {err}", flush=True)
         traceback.print_exc()
