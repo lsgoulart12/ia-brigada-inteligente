@@ -3,9 +3,11 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
+from google import genai
 import gspread
-import requests
 import streamlit as st
+
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 # --- CONFIGURAÇÃO ---
 st.set_page_config(page_title="IA BRIGADA", layout="centered")
@@ -160,28 +162,13 @@ def conectar_google_sheets():
 
 
 def responder_gemini_rest(prompt_texto: str):
-    """Envia um prompt ao Gemini pela API REST."""
+    """Envia um prompt ao Gemini usando a biblioteca oficial atualizada."""
     try:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": st.secrets["GEMINI_API_KEY"],
-        }
-        payload = {
-            "contents": [{"parts": [{"text": prompt_texto}]}]
-        }
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt_texto,
         )
-        if response.status_code == 200:
-            return response.json()["candidates"][0]["content"]["parts"][0]["text"]
-
-        erro = f"Erro na API ({response.status_code}): {response.text}"
-        print(erro, flush=True)
-        st.error(erro)
-        return None
+        return response.text
     except Exception as err:
         print(f"Erro detalhado do Gemini: {err}", flush=True)
         traceback.print_exc()
