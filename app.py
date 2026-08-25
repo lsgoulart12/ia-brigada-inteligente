@@ -394,7 +394,7 @@ if not st.session_state["autenticado"]:
         if acesso_valido:
             st.session_state["autenticado"] = True
             st.session_state["usuario"] = usuario.split(" ")[0]
-            st.session_state["administrador_autorizado"] = usuario == "administrador"
+            st.session_state["administrador_autorizado"] = False
             st.rerun()
         else:
             st.error("Senha incorreta.")
