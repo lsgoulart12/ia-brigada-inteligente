@@ -212,6 +212,65 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
         return False
 
 
+def cadastrar_extintor(usuario: str, local: str, tipo: str, identificacao: str, validade) -> bool:
+    """Registra um extintor nas colunas reservadas da planilha."""
+    if planilha is None:
+        st.error("Não foi possível acessar a planilha para cadastrar o extintor.")
+        return False
+
+    try:
+        planilha.append_row(
+            ["", "", "", "", usuario, local, tipo, identificacao, validade.isoformat()]
+        )
+        carregar_extintores.clear()
+        st.success("Extintor cadastrado com sucesso.")
+        return True
+    except Exception as extinguisher_err:
+        print(f"Erro ao cadastrar extintor: {extinguisher_err}", flush=True)
+        st.error("Não foi possível cadastrar o extintor.")
+        return False
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def carregar_extintores() -> pd.DataFrame:
+    """Carrega os extintores registrados nas colunas reservadas da planilha."""
+    colunas = ["usuario", "local", "tipo", "identificacao", "validade"]
+    if planilha is None:
+        return pd.DataFrame(columns=colunas)
+
+    registros = planilha.get_all_values()
+    extintores = []
+    for registro in registros:
+        if len(registro) >= 9 and any(str(valor).strip() for valor in registro[4:9]):
+            extintores.append(registro[4:9])
+
+    return pd.DataFrame(extintores, columns=colunas)
+
+
+def render_alerta_extintores() -> None:
+    """Destaca extintores vencidos ou com validade nos próximos 15 dias."""
+    extintores = carregar_extintores()
+    if extintores.empty:
+        return
+
+    extintores["validade"] = pd.to_datetime(extintores["validade"], errors="coerce").dt.date
+    hoje = datetime.now().date()
+    limite = hoje + pd.Timedelta(days=15)
+    alerta = extintores[extintores["validade"].notna() & (extintores["validade"] <= limite)]
+    if alerta.empty:
+        return
+
+    st.markdown(
+        "<div style='color:#b42318;font-weight:700;'>Atenção: extintores vencidos ou com validade em até 15 dias.</div>",
+        unsafe_allow_html=True,
+    )
+    st.dataframe(
+        alerta.style.set_properties(color="#b42318", font_weight="700"),
+        hide_index=True,
+        use_container_width=True,
+    )
+
+
 @st.cache_data(ttl=60, show_spinner=False)
 def carregar_historico_analitico() -> pd.DataFrame:
     """Carrega os registros da planilha para os indicadores analíticos."""
@@ -225,7 +284,7 @@ def carregar_historico_analitico() -> pd.DataFrame:
     historico = pd.DataFrame(registros)
     historico = historico.iloc[:, :4]
     historico.columns = ["usuario", "pergunta", "resposta", "data_hora"]
-    return historico.dropna(subset=["pergunta"])
+    return historico[historico["pergunta"].astype(str).str.strip().ne("")]
 
 
 def classificar_categoria(pergunta: str) -> str:
@@ -336,11 +395,36 @@ else:
         with st.chat_message(item["role"], avatar=avatar):
             st.write(item["content"])
 
-    entrada = st.chat_input(
-        "Digite sua dúvida ou descrição dos fatos...",
-        accept_file=True,
-        file_type=["jpg", "png", "jpeg"],
-    )
+    modo_cadastro = st.toggle("Cadastro rápido de extintor")
+    if modo_cadastro:
+        with st.form("cadastro_extintor_form", clear_on_submit=True):
+            local_extintor = st.text_input("Local ou estúdio")
+            tipo_extintor = st.selectbox("Tipo de extintor", ["CO2", "PQS", "AP"])
+            identificacao_extintor = st.text_input("Número de identificação")
+            validade_extintor = st.date_input("Data de validade")
+            cadastrar = st.form_submit_button("Cadastrar extintor")
+
+        if cadastrar:
+            campos_preenchidos = all(
+                [local_extintor.strip(), tipo_extintor, identificacao_extintor.strip()]
+            )
+            if not campos_preenchidos:
+                st.error("Preencha todos os campos do extintor.")
+            else:
+                cadastrar_extintor(
+                    username,
+                    local_extintor.strip(),
+                    tipo_extintor,
+                    identificacao_extintor.strip(),
+                    validade_extintor,
+                )
+        entrada = None
+    else:
+        entrada = st.chat_input(
+            "Digite sua dúvida ou descrição dos fatos...",
+            accept_file=True,
+            file_type=["jpg", "png", "jpeg"],
+        )
     pergunta = entrada.text if entrada is not None else ""
     uploaded_file = entrada.files[0] if entrada is not None and entrada.files else None
     enviar = entrada is not None
@@ -400,3 +484,4 @@ else:
 
     if administrador:
         render_dashboard_analitico()
+        render_alerta_extintores()
