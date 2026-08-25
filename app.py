@@ -291,6 +291,11 @@ if not st.session_state["autenticado"]:
 else:
     username = st.session_state["usuario"]
     st.caption(f"Conectado como {username}")
+    senha_administrador = st.sidebar.text_input(
+        "Senha administrativa",
+        type="password",
+    )
+    administrador = senha_administrador == st.secrets.get("ADMIN_PASSWORD", "")
 
     # Inicializa o histórico se não existir
     if "historico" not in st.session_state:
@@ -360,4 +365,5 @@ else:
                 traceback.print_exc()
                 st.error("Não foi possível processar sua pergunta. Tente novamente.")
 
-    render_dashboard_analitico()
+    if administrador:
+        render_dashboard_analitico()
