@@ -250,8 +250,9 @@ def carregar_extintores() -> pd.DataFrame:
     extintores = []
     linhas_planilha = []
     for numero_linha, registro in enumerate(registros, start=1):
-        if len(registro) >= 9 and any(str(valor).strip() for valor in registro[4:9]):
-            extintores.append(registro[4:9])
+        campos_extintor = registro[4:9] if len(registro) >= 9 else []
+        if len(campos_extintor) == 5 and all(str(valor).strip() for valor in campos_extintor):
+            extintores.append(campos_extintor)
             linhas_planilha.append(numero_linha)
 
     if not extintores:
