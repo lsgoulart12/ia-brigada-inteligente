@@ -6,6 +6,7 @@ from PIL import Image
 import pandas as pd
 from google import genai
 import gspread
+from gspread.exceptions import WorksheetNotFound
 import streamlit as st
 
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
@@ -151,6 +152,7 @@ st.markdown(
 )
 
 PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
+NOME_ABA = "ia-brigada-dados"
 
 
 @st.cache_resource(show_spinner=False)
@@ -190,7 +192,14 @@ def responder_gemini_rest(prompt_texto: str, historico=None):
 
 try:
     cliente_google_sheets = conectar_google_sheets()
-    planilha = cliente_google_sheets.open_by_url(PLANILHA_URL).sheet1
+    arquivo_planilha = cliente_google_sheets.open_by_url(PLANILHA_URL)
+    print(f"Aba da planilha selecionada: {NOME_ABA}", flush=True)
+    planilha = arquivo_planilha.worksheet(NOME_ABA)
+except WorksheetNotFound:
+    planilha = None
+    mensagem_aba = f'A aba "{NOME_ABA}" não foi encontrada na planilha.'
+    print(mensagem_aba, flush=True)
+    st.error(mensagem_aba)
 except Exception as config_err:
     planilha = None
     print(f"Erro ao conectar ao Google Sheets: {config_err}", flush=True)
@@ -219,6 +228,7 @@ def cadastrar_extintor(usuario: str, local: str, tipo: str, identificacao: str, 
         return False
 
     try:
+        print(f"Aba da planilha para cadastro: {NOME_ABA}", flush=True)
         planilha.append_row(
             ["", "", "", "", usuario, local, tipo, identificacao, validade.isoformat()]
         )
