@@ -297,8 +297,12 @@ def render_alerta_extintores() -> None:
         "<div style='color:#b42318;font-weight:700;'>Atenção: extintores vencidos ou com validade em até 15 dias.</div>",
         unsafe_allow_html=True,
     )
+    st.subheader("Orientação direta")
     cabecalho = st.columns([1, 2, 2, 2, 1])
-    for coluna, titulo in zip(cabecalho, ["Usuário", "Local", "Tipo", "Identificação", "Ação"]):
+    for coluna, titulo in zip(
+        cabecalho,
+        ["Usuário", "Local", "Tipo", "Identificação / Validade", "Ação"],
+    ):
         coluna.markdown(f"**{titulo}**")
 
     for _, extintor in alerta.iterrows():
