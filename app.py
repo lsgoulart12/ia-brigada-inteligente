@@ -234,17 +234,27 @@ def cadastrar_extintor(usuario: str, local: str, tipo: str, identificacao: str, 
 @st.cache_data(ttl=60, show_spinner=False)
 def carregar_extintores() -> pd.DataFrame:
     """Carrega os extintores registrados nas colunas reservadas da planilha."""
-    colunas = ["usuario", "local", "tipo", "identificacao", "validade", "linha_planilha"]
+    colunas = ["usuario", "local", "tipo", "identificacao", "validade"]
     if planilha is None:
         return pd.DataFrame(columns=colunas)
 
-    registros = planilha.get_all_values()
+    try:
+        registros = planilha.get_all_values()
+    except Exception as sheet_err:
+        print(f"Erro ao ler extintores: {sheet_err}", flush=True)
+        return pd.DataFrame(columns=colunas)
+
+    if not registros:
+        return pd.DataFrame(columns=colunas)
+
     extintores = []
+    linhas_planilha = []
     for numero_linha, registro in enumerate(registros, start=1):
         if len(registro) >= 9 and any(str(valor).strip() for valor in registro[4:9]):
-            extintores.append([*registro[4:9], numero_linha])
+            extintores.append(registro[4:9])
+            linhas_planilha.append(numero_linha)
 
-    return pd.DataFrame(extintores, columns=colunas)
+    return pd.DataFrame(extintores, columns=colunas, index=linhas_planilha)
 
 
 def excluir_extintor(linha_planilha: int) -> bool:
@@ -269,7 +279,10 @@ def render_alerta_extintores() -> None:
     if extintores.empty:
         return
 
-    extintores["validade"] = pd.to_datetime(extintores["validade"], errors="coerce").dt.date
+    extintores = extintores.copy()
+    extintores["validade"] = pd.to_datetime(
+        extintores["validade"], errors="coerce"
+    ).dt.date
     hoje = datetime.now().date()
     limite = hoje + pd.Timedelta(days=15)
     alerta = extintores[extintores["validade"].notna() & (extintores["validade"] <= limite)]
@@ -290,8 +303,8 @@ def render_alerta_extintores() -> None:
         colunas[1].markdown(f":red[{extintor['local']}]")
         colunas[2].markdown(f":red[{extintor['tipo']}]")
         colunas[3].markdown(f":red[{extintor['identificacao']}] - {extintor['validade']}")
-        if colunas[4].button("Excluir", key=f"excluir_extintor_{extintor['linha_planilha']}"):
-            if excluir_extintor(int(extintor["linha_planilha"])):
+        if colunas[4].button("Excluir", key=f"excluir_extintor_{extintor.name}"):
+            if excluir_extintor(int(extintor.name)):
                 st.rerun()
 
 
