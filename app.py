@@ -277,12 +277,20 @@ if "autenticado" not in st.session_state:
 
 if not st.session_state["autenticado"]:
     with st.form("login_form", clear_on_submit=False):
-        usuario = st.selectbox("Usuário:", ["b1 (Bombeiro1)", "b2 (Bombeiro2)"])
+        usuario = st.selectbox(
+            "Usuário:",
+            ["b1 (Bombeiro1)", "b2 (Bombeiro2)", "administrador"],
+        )
         senha = st.text_input("Senha:", type="password")
         entrar = st.form_submit_button("Entrar", use_container_width=True)
 
     if entrar:
-        if senha in ["senha1", "senha2"]:
+        acesso_valido = (
+            senha == "8920"
+            if usuario == "administrador"
+            else senha in ["senha1", "senha2"]
+        )
+        if acesso_valido:
             st.session_state["autenticado"] = True
             st.session_state["usuario"] = usuario.split(" ")[0]
             st.rerun()
@@ -291,11 +299,14 @@ if not st.session_state["autenticado"]:
 else:
     username = st.session_state["usuario"]
     st.caption(f"Conectado como {username}")
-    senha_administrador = st.sidebar.text_input(
-        "Senha administrativa",
-        type="password",
-    )
-    administrador = senha_administrador == st.secrets.get("ADMIN_PASSWORD", "")
+    if username == "administrador":
+        senha_administrador = st.sidebar.text_input(
+            "Senha administrativa",
+            type="password",
+        )
+        administrador = senha_administrador == "8920"
+    else:
+        administrador = False
 
     # Inicializa o histórico se não existir
     if "historico" not in st.session_state:
