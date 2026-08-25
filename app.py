@@ -165,7 +165,7 @@ def responder_gemini_rest(prompt_texto: str):
     """Envia um prompt ao Gemini usando a biblioteca oficial atualizada."""
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents=prompt_texto,
         )
         return response.text
