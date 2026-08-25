@@ -3,6 +3,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from PIL import Image
+import pandas as pd
 from google import genai
 import gspread
 import streamlit as st
@@ -200,6 +201,74 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
         st.error("A resposta foi gerada, mas não foi possível salvar o histórico.")
         return False
 
+
+@st.cache_data(ttl=60, show_spinner=False)
+def carregar_historico_analitico() -> pd.DataFrame:
+    """Carrega os registros da planilha para os indicadores analíticos."""
+    if planilha is None:
+        return pd.DataFrame(columns=["usuario", "pergunta", "resposta", "data_hora"])
+
+    registros = planilha.get_all_values()
+    if not registros:
+        return pd.DataFrame(columns=["usuario", "pergunta", "resposta", "data_hora"])
+
+    historico = pd.DataFrame(registros)
+    historico = historico.iloc[:, :4]
+    historico.columns = ["usuario", "pergunta", "resposta", "data_hora"]
+    return historico.dropna(subset=["pergunta"])
+
+
+def classificar_categoria(pergunta: str) -> str:
+    """Agrupa perguntas por tema operacional."""
+    texto = str(pergunta).lower()
+    categorias = {
+        "Extintores": ["extintor", "classe de fogo", "agente extintor"],
+        "EPI": ["epi", "capacete", "luva", "botina", "equipamento de proteção"],
+        "Primeiros socorros": ["primeiros socorros", "desmaio", "ferimento", "queimadura"],
+        "Incêndios": ["incêndio", "incendio", "fogo", "fumaça", "fumaca"],
+        "Procedimentos": ["procedimento", "evacuação", "evacuacao", "emergência", "emergencia"],
+    }
+    for categoria, termos in categorias.items():
+        if any(termo in texto for termo in termos):
+            return categoria
+    return "Outros"
+
+
+def classificar_tipo_duvida(pergunta: str) -> str:
+    """Separa orientação direta de confirmação de procedimento executado."""
+    texto = str(pergunta).lower()
+    termos_validacao = [
+        "fiz",
+        "realizei",
+        "executei",
+        "confirma",
+        "está correto",
+        "esta correto",
+        "procedi",
+        "deu certo",
+    ]
+    if any(termo in texto for termo in termos_validacao):
+        return "Confirmação de procedimento"
+    return "Orientação direta"
+
+
+def render_dashboard_analitico() -> None:
+    """Exibe os indicadores derivados do histórico do Google Sheets."""
+    historico = carregar_historico_analitico()
+    if historico.empty:
+        st.info("Ainda não há registros para análise.")
+        return
+
+    historico["categoria"] = historico["pergunta"].map(classificar_categoria)
+    historico["tipo_duvida"] = historico["pergunta"].map(classificar_tipo_duvida)
+
+    st.subheader("Dashboard analítico")
+    categorias = historico["categoria"].value_counts().rename("Quantidade")
+    st.bar_chart(categorias)
+
+    tipos_duvida = historico["tipo_duvida"].value_counts().rename("Quantidade")
+    st.bar_chart(tipos_duvida)
+
 # --- IDENTIDADE VISUAL PERSISTENTE ---
 render_brand_header()
 
@@ -290,3 +359,5 @@ else:
                 print(f"Erro ao processar pergunta: {e}", flush=True)
                 traceback.print_exc()
                 st.error("Não foi possível processar sua pergunta. Tente novamente.")
+
+    render_dashboard_analitico()
