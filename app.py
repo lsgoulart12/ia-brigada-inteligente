@@ -191,24 +191,22 @@ def responder_gemini_rest(prompt_texto: str, historico=None):
 try:
     cliente_google_sheets = conectar_google_sheets()
     arquivo_planilha = cliente_google_sheets.open_by_url(PLANILHA_URL)
-    planilha = arquivo_planilha.get_worksheet(0)
-    planilha_chat = arquivo_planilha.worksheet("Página1")
-    print("Aba padrão da planilha selecionada por índice 0", flush=True)
+    planilha = arquivo_planilha.worksheet("Página1")
+    print("Aba Página1 da planilha selecionada", flush=True)
 except Exception as config_err:
     planilha = None
-    planilha_chat = None
     print(f"Erro ao conectar ao Google Sheets: {config_err}", flush=True)
     traceback.print_exc()
 
 
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
     """Adiciona uma interação à planilha e mantém o chat funcionando se falhar."""
-    if planilha_chat is None:
+    if planilha is None:
         st.warning("O histórico não foi salvo. Tente novamente mais tarde.")
         return False
 
     try:
-        planilha_chat.append_row([usuario, pergunta, resposta, str(datetime.now())])
+        planilha.append_row([usuario, pergunta, resposta, str(datetime.now())])
         return True
     except Exception as sheet_err:
         print(f"Erro ao salvar interação no Google Sheets: {sheet_err}")
