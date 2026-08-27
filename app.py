@@ -293,7 +293,9 @@ def render_alerta_extintores() -> None:
         return
 
     extintores = extintores.copy()
-    extintores["validade"] = pd.to_datetime(extintores["validade"], errors="coerce")
+    extintores["validade"] = pd.to_datetime(
+        extintores["validade"], errors="coerce", dayfirst=True
+    )
     limite = pd.to_datetime(datetime.now() + pd.Timedelta(days=15))
     alerta = extintores[extintores["validade"].notna() & (extintores["validade"] <= limite)]
     if alerta.empty:
@@ -326,15 +328,15 @@ def render_alerta_extintores() -> None:
 def carregar_historico_analitico() -> pd.DataFrame:
     """Carrega os registros da planilha para os indicadores analíticos."""
     if planilha is None:
-        return pd.DataFrame(columns=["usuario", "pergunta", "resposta", "data_hora"])
+        return pd.DataFrame(columns=["usuario", "pergunta", "resposta", "data"])
 
     registros = planilha.get_all_values()
     if not registros:
-        return pd.DataFrame(columns=["usuario", "pergunta", "resposta", "data_hora"])
+        return pd.DataFrame(columns=["usuario", "pergunta", "resposta", "data"])
 
     historico = pd.DataFrame(registros)
     historico = historico.iloc[:, :4]
-    historico.columns = ["usuario", "pergunta", "resposta", "data_hora"]
+    historico.columns = ["usuario", "pergunta", "resposta", "data"]
     return historico[historico["pergunta"].astype(str).str.strip().ne("")]
 
 
