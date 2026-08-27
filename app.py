@@ -150,7 +150,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-PLANILHA_URL = "https://docs.google.com/spreadsheets/d/1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg/edit?gid=0#gid=0"
+PLANILHA_ID = "1QC59C1cB8WXZKrY4RVJxH5ZS5Ju4_RDcTdR64VA7SQg"
 
 
 @st.cache_resource(show_spinner=False)
@@ -190,7 +190,7 @@ def responder_gemini_rest(prompt_texto: str, historico=None):
 
 try:
     cliente_google_sheets = conectar_google_sheets()
-    arquivo_planilha = cliente_google_sheets.open_by_url(PLANILHA_URL)
+    arquivo_planilha = cliente_google_sheets.open_by_key(PLANILHA_ID)
     planilha = arquivo_planilha.worksheet("Página1")
     print("Aba Página1 da planilha selecionada", flush=True)
 except Exception as config_err:
@@ -202,7 +202,7 @@ except Exception as config_err:
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
     """Adiciona uma interação à planilha e mantém o chat funcionando se falhar."""
     try:
-        arquivo_planilha = conectar_google_sheets().open_by_url(PLANILHA_URL)
+        arquivo_planilha = conectar_google_sheets().open_by_key(PLANILHA_ID)
         pagina1 = arquivo_planilha.worksheet("Página1")
         valores = [str(usuario), str(pergunta), str(resposta), str(datetime.now())]
         pagina1.append_row(valores)
@@ -217,7 +217,7 @@ def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
 def cadastrar_extintor(usuario: str, local: str, tipo: str, identificacao: str, validade) -> bool:
     """Registra um extintor nas colunas reservadas da planilha."""
     try:
-        arquivo_planilha = conectar_google_sheets().open_by_url(PLANILHA_URL)
+        arquivo_planilha = conectar_google_sheets().open_by_key(PLANILHA_ID)
         pagina1 = arquivo_planilha.worksheet("Página1")
         valores = [
             "",
