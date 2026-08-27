@@ -201,30 +201,36 @@ except Exception as config_err:
 
 def salvar_interacao(usuario: str, pergunta: str, resposta: str) -> bool:
     """Adiciona uma interação à planilha e mantém o chat funcionando se falhar."""
-    if planilha is None:
-        st.warning("O histórico não foi salvo. Tente novamente mais tarde.")
-        return False
-
     try:
-        planilha.append_row([usuario, pergunta, resposta, str(datetime.now())])
+        arquivo_planilha = conectar_google_sheets().open_by_url(PLANILHA_URL)
+        pagina1 = arquivo_planilha.worksheet("Página1")
+        valores = [str(usuario), str(pergunta), str(resposta), str(datetime.now())]
+        pagina1.append_row(valores)
         return True
     except Exception as sheet_err:
         print(f"Erro ao salvar interação no Google Sheets: {sheet_err}")
+        st.warning("O histórico não foi salvo. Tente novamente mais tarde.")
         st.error("A resposta foi gerada, mas não foi possível salvar o histórico.")
         return False
 
 
 def cadastrar_extintor(usuario: str, local: str, tipo: str, identificacao: str, validade) -> bool:
     """Registra um extintor nas colunas reservadas da planilha."""
-    if planilha is None:
-        st.error("Não foi possível acessar a planilha para cadastrar o extintor.")
-        return False
-
     try:
-        print("Aba padrão da planilha usada para cadastro: índice 0", flush=True)
-        planilha.append_row(
-            ["", "", "", "", usuario, local, tipo, identificacao, validade.isoformat()]
-        )
+        arquivo_planilha = conectar_google_sheets().open_by_url(PLANILHA_URL)
+        pagina1 = arquivo_planilha.worksheet("Página1")
+        valores = [
+            "",
+            "",
+            "",
+            "",
+            str(usuario),
+            str(local),
+            str(tipo),
+            str(identificacao),
+            str(validade.isoformat()),
+        ]
+        pagina1.append_row(valores)
         carregar_extintores.clear()
         st.success("Extintor cadastrado com sucesso.")
         return True
